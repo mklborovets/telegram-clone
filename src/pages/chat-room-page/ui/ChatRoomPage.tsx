@@ -22,6 +22,7 @@ import { copyToClipboard } from '../../../shared/lib/clipboard';
 export interface ChatRoomPageProps {
   chatId: string;
   onBack: () => void;
+  onOpenProfile?: () => void;
 }
 
 const EMPTY_MESSAGES: IMessage[] = [];
@@ -35,6 +36,7 @@ interface ChatRoomUIState {
 export const ChatRoomPage: React.FC<ChatRoomPageProps> = ({
   chatId,
   onBack,
+  onOpenProfile,
 }) => {
   const chat = useChatStore((state) =>
     state.chats.find((c) => c.id === chatId)
@@ -112,7 +114,7 @@ export const ChatRoomPage: React.FC<ChatRoomPageProps> = ({
 
   return (
     <View style={styles.container}>
-      <ChatHeader chat={chat} onBack={onBack} />
+      <ChatHeader chat={chat} onBack={onBack} onHeaderPress={onOpenProfile} />
       <Animated.View style={[styles.chatContent, keyboardAnimatedStyle]}>
         <MessageList
           messages={messages}

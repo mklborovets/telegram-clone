@@ -16,6 +16,7 @@ import { ChatListPage } from '../../pages/chat-list-page';
 import { ChatRoomPage } from '../../pages/chat-room-page';
 import { ArchivePage } from '../../pages/archive-page';
 import { FolderManagerPage } from '../../pages/folder-manager-page';
+import { ChatProfilePage, MyProfilePage } from '../../pages/profile-page';
 import { NavigationDrawer } from '../../widgets/drawer';
 import { IChat, useChatStore } from '../../entities/chat';
 import { useMessageStore } from '../../entities/message';
@@ -26,6 +27,8 @@ export const RootNavigator: React.FC = () => {
   const [isArchiveOpen, setIsArchiveOpen] = useState(false);
   const [isDrawerOpen, setIsDrawerOpen] = useState(false);
   const [isFolderManagerOpen, setIsFolderManagerOpen] = useState(false);
+  const [isMyProfileOpen, setIsMyProfileOpen] = useState(false);
+  const [isChatProfileOpen, setIsChatProfileOpen] = useState(false);
 
   const chats = useChatStore((state) => state.chats);
   const markAsRead = useChatStore((state) => state.markAsRead);
@@ -84,6 +87,14 @@ export const RootNavigator: React.FC = () => {
 
   useEffect(() => {
     const onBackPress = () => {
+      if (isChatProfileOpen) {
+        setIsChatProfileOpen(false);
+        return true;
+      }
+      if (isMyProfileOpen) {
+        setIsMyProfileOpen(false);
+        return true;
+      }
       if (isFolderManagerOpen) {
         setIsFolderManagerOpen(false);
         return true;
@@ -109,6 +120,8 @@ export const RootNavigator: React.FC = () => {
     );
     return () => subscription.remove();
   }, [
+    isChatProfileOpen,
+    isMyProfileOpen,
     isFolderManagerOpen,
     isDrawerOpen,
     activeChatId,
@@ -153,7 +166,11 @@ export const RootNavigator: React.FC = () => {
               onOpenChat={handleOpenChat}
             />
           ) : activeChatId ? (
-            <ChatRoomPage chatId={activeChatId} onBack={handleBack} />
+            <ChatRoomPage
+              chatId={activeChatId}
+              onBack={handleBack}
+              onOpenProfile={() => setIsChatProfileOpen(true)}
+            />
           ) : (
             <View style={styles.placeholder} />
           )}
@@ -161,7 +178,11 @@ export const RootNavigator: React.FC = () => {
 
         <View style={{ width, flex: 1 }}>
           {isArchiveOpen && activeChatId ? (
-            <ChatRoomPage chatId={activeChatId} onBack={handleBack} />
+            <ChatRoomPage
+              chatId={activeChatId}
+              onBack={handleBack}
+              onOpenProfile={() => setIsChatProfileOpen(true)}
+            />
           ) : (
             <View style={styles.placeholder} />
           )}
@@ -173,6 +194,7 @@ export const RootNavigator: React.FC = () => {
         onClose={() => setIsDrawerOpen(false)}
         onOpenFolderManager={() => setIsFolderManagerOpen(true)}
         onOpenSavedMessages={handleOpenSavedMessages}
+        onOpenProfile={() => setIsMyProfileOpen(true)}
       />
 
       <Modal
@@ -182,6 +204,32 @@ export const RootNavigator: React.FC = () => {
         onRequestClose={() => setIsFolderManagerOpen(false)}
       >
         <FolderManagerPage onBack={() => setIsFolderManagerOpen(false)} />
+      </Modal>
+
+      <Modal
+        visible={isMyProfileOpen}
+        animationType="slide"
+        presentationStyle="pageSheet"
+        onRequestClose={() => setIsMyProfileOpen(false)}
+      >
+        <MyProfilePage
+          onBack={() => setIsMyProfileOpen(false)}
+          onOpenSavedMessages={handleOpenSavedMessages}
+        />
+      </Modal>
+
+      <Modal
+        visible={isChatProfileOpen && Boolean(activeChatId)}
+        animationType="slide"
+        presentationStyle="pageSheet"
+        onRequestClose={() => setIsChatProfileOpen(false)}
+      >
+        {activeChatId ? (
+          <ChatProfilePage
+            chatId={activeChatId}
+            onBack={() => setIsChatProfileOpen(false)}
+          />
+        ) : null}
       </Modal>
     </View>
   );

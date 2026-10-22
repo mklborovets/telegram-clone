@@ -28,6 +28,7 @@ import {
 } from 'lucide-react-native';
 import { Avatar } from '../../../shared/ui/avatar';
 import { theme } from '../../../shared/config/theme';
+import { useUserStore } from '../../../entities/user';
 
 export interface NavigationDrawerProps {
   isOpen: boolean;
@@ -48,6 +49,8 @@ export const NavigationDrawer: React.FC<NavigationDrawerProps> = ({
 }) => {
   const { width } = useWindowDimensions();
   const drawerWidth = Math.min(width * 0.82, 320);
+
+  const profile = useUserStore((state) => state.profile);
 
   const [visible, setVisible] = useState(isOpen);
   const [isDarkMode, setIsDarkMode] = useState(false);
@@ -109,7 +112,8 @@ export const NavigationDrawer: React.FC<NavigationDrawerProps> = ({
           <View style={styles.header}>
             <View style={styles.headerTop}>
               <Avatar
-                name="Alex Romanov"
+                name={profile.name}
+                avatarUrl={profile.avatarUrl}
                 size={64}
                 isOnline
               />
@@ -123,10 +127,10 @@ export const NavigationDrawer: React.FC<NavigationDrawerProps> = ({
 
             <View style={styles.userInfo}>
               <Text style={styles.userName} numberOfLines={1}>
-                Alex Romanov
+                {profile.name}
               </Text>
-              <Text style={styles.userPhone}>+380 98 123 45 67</Text>
-              <Text style={styles.userHandle}>@alex_rn</Text>
+              <Text style={styles.userPhone}>{profile.phone}</Text>
+              <Text style={styles.userHandle}>@{profile.username}</Text>
             </View>
           </View>
 
