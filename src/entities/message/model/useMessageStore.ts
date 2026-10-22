@@ -1,4 +1,6 @@
 import { create } from 'zustand';
+import { persist, createJSONStorage } from 'zustand/middleware';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import { IMessage } from './types';
 import { initialMessages } from './mockData';
 import { useChatStore } from '../../chat';
@@ -11,7 +13,9 @@ interface MessageState {
   toggleRead: (chatId: string) => void;
 }
 
-export const useMessageStore = create<MessageState>((set, get) => ({
+export const useMessageStore = create<MessageState>()(
+  persist(
+    (set, get) => ({
   messages: initialMessages,
 
   addMessage: (chatId: string, text: string, isMe = true) => {
@@ -92,4 +96,13 @@ export const useMessageStore = create<MessageState>((set, get) => ({
       }
     });
   },
-}));
+    }),
+    {
+      name: 'telegram-messages-storage',
+      storage: createJSONStorage(() => AsyncStorage),
+      partialize: (state) => ({
+        messages: state.messages,
+      }),
+    }
+  )
+);
