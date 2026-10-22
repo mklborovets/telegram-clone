@@ -36,6 +36,10 @@
 	</dict>
 	<key>NSLocationWhenInUseUsageDescription</key>
 	<string></string>
+	<key>NSPhotoLibraryUsageDescription</key>
+	<string>TelegramClone needs access to your photos to let you share images in chats.</string>
+	<key>NSCameraUsageDescription</key>
+	<string>TelegramClone needs access to your camera to let you take and send photos.</string>
 	<key>RCTNewArchEnabled</key>
 	<true/>
 	<key>UIApplicationSceneManifest</key>

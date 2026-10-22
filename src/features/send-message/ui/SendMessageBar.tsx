@@ -25,6 +25,7 @@ import {
 } from 'lucide-react-native';
 import { useMessageStore, IMessage } from '../../../entities/message';
 import { theme } from '../../../shared/config/theme';
+import { pickImageFromGallery, pickDocumentFile } from '../../../shared/lib/mediaPicker';
 
 export interface SendMessageBarProps {
   chatId: string;
@@ -94,28 +95,34 @@ export const SendMessageBar: React.FC<SendMessageBarProps> = ({
     setText('');
   };
 
-  const handleSendPhoto = () => {
+  const handleSendPhoto = async () => {
     setShowAttachMenu(false);
-    addMessage(
-      chatId,
-      'Project screenshot overview',
-      true,
-      'photo',
-      'https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?w=800&q=80'
-    );
+    const media = await pickImageFromGallery();
+    if (media && media.uri) {
+      addMessage(
+        chatId,
+        media.fileName || 'Photo',
+        true,
+        'photo',
+        media.uri
+      );
+    }
   };
 
-  const handleSendFile = () => {
+  const handleSendFile = async () => {
     setShowAttachMenu(false);
-    addMessage(
-      chatId,
-      'Specification document v2.4',
-      true,
-      'file',
-      undefined,
-      'Specification_Document_v2.4.pdf',
-      '3.8 MB'
-    );
+    const media = await pickDocumentFile();
+    if (media) {
+      addMessage(
+        chatId,
+        media.fileName || 'Document',
+        true,
+        'file',
+        media.uri,
+        media.fileName,
+        media.fileSize
+      );
+    }
   };
 
   const animatedButtonStyle = useAnimatedStyle(() => ({

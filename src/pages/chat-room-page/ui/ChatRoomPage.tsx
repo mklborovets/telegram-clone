@@ -17,6 +17,7 @@ import { ChatHeader, MessageList } from '../../../widgets/chat-room-view';
 import { SendMessageBar } from '../../../features/send-message';
 import { CustomButton } from '../../../shared/ui/custom-button';
 import { theme } from '../../../shared/config/theme';
+import { copyToClipboard } from '../../../shared/lib/clipboard';
 
 export interface ChatRoomPageProps {
   chatId: string;
@@ -39,6 +40,7 @@ export const ChatRoomPage: React.FC<ChatRoomPageProps> = ({
 
   const [selectedMessage, setSelectedMessage] = useState<IMessage | null>(null);
   const [editingMessage, setEditingMessage] = useState<IMessage | null>(null);
+  const [toastMessage, setToastMessage] = useState<string | null>(null);
 
   const keyboard = useAnimatedKeyboard({ isStatusBarTranslucentAndroid: true });
 
@@ -70,7 +72,15 @@ export const ChatRoomPage: React.FC<ChatRoomPageProps> = ({
   };
 
   const handleCopy = () => {
-    setSelectedMessage(null);
+    if (selectedMessage) {
+      const textToCopy = selectedMessage.text || selectedMessage.fileName || '';
+      if (textToCopy) {
+        copyToClipboard(textToCopy);
+        setToastMessage('Text copied to clipboard');
+        setTimeout(() => setToastMessage(null), 2000);
+      }
+      setSelectedMessage(null);
+    }
   };
 
   return (
@@ -150,6 +160,12 @@ export const ChatRoomPage: React.FC<ChatRoomPageProps> = ({
           </View>
         </View>
       </Modal>
+
+      {toastMessage ? (
+        <View style={styles.toastContainer} pointerEvents="none">
+          <Text style={styles.toastText}>{toastMessage}</Text>
+        </View>
+      ) : null}
     </View>
   );
 };
@@ -161,6 +177,26 @@ const styles = StyleSheet.create({
   },
   chatContent: {
     flex: 1,
+  },
+  toastContainer: {
+    position: 'absolute',
+    bottom: 84,
+    alignSelf: 'center',
+    backgroundColor: 'rgba(30, 30, 30, 0.88)',
+    paddingVertical: 10,
+    paddingHorizontal: 20,
+    borderRadius: 20,
+    zIndex: 999,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.3,
+    shadowRadius: 8,
+    elevation: 8,
+  },
+  toastText: {
+    color: '#FFFFFF',
+    fontSize: 14,
+    fontWeight: '600',
   },
   modalOverlay: {
     flex: 1,
