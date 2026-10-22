@@ -58,6 +58,29 @@ export const pickImageFromGallery = async (): Promise<PickedMedia | null> => {
 };
 
 export const pickDocumentFile = async (): Promise<PickedMedia | null> => {
+  try {
+    const DocumentPickerModule = require('react-native-document-picker');
+    const DocumentPicker = DocumentPickerModule.default || DocumentPickerModule;
+    if (DocumentPicker && typeof DocumentPicker.pick === 'function') {
+      const result = await DocumentPicker.pick({
+        type: [DocumentPicker.types.allFiles],
+      });
+      const file = Array.isArray(result) ? result[0] : result;
+      if (file && file.uri) {
+        return {
+          uri: file.uri,
+          fileName: file.name || 'document.pdf',
+          fileSize: formatFileSize(file.size),
+          type: 'file',
+        };
+      }
+    }
+  } catch (err: any) {
+    if (err && (err.code === 'DOCUMENT_PICKER_CANCELED' || err.message?.includes('cancel'))) {
+      return null;
+    }
+  }
+
   return {
     uri: 'https://www.w3.org/WAI/ER/tests/xhtml/testfiles/resources/pdf/dummy.pdf',
     fileName: 'Report_2026.pdf',
