@@ -13,12 +13,14 @@ import Animated, {
 } from 'react-native-reanimated';
 import { ChatListPage } from '../../pages/chat-list-page';
 import { ChatRoomPage } from '../../pages/chat-room-page';
+import { ArchivePage } from '../../pages/archive-page';
 import { IChat, useChatStore } from '../../entities/chat';
 import { useMessageStore } from '../../entities/message';
 
 export const RootNavigator: React.FC = () => {
   const { width } = useWindowDimensions();
   const [activeChatId, setActiveChatId] = useState<string | null>(null);
+  const [isArchiveOpen, setIsArchiveOpen] = useState(false);
   const markAsRead = useChatStore((state) => state.markAsRead);
   const markMessagesAsRead = useMessageStore((state) => state.markAsRead);
 
@@ -29,22 +31,45 @@ export const RootNavigator: React.FC = () => {
       setActiveChatId(chat.id);
       markAsRead(chat.id);
       markMessagesAsRead(chat.id);
-      translateX.value = withSpring(-width, {
+      const targetX = isArchiveOpen ? -width * 2 : -width;
+      translateX.value = withSpring(targetX, {
         damping: 30,
         stiffness: 260,
         overshootClamping: true,
       });
     },
-    [width, markAsRead, markMessagesAsRead, translateX]
+    [isArchiveOpen, width, markAsRead, markMessagesAsRead, translateX]
   );
 
+  const handleOpenArchive = useCallback(() => {
+    setIsArchiveOpen(true);
+    translateX.value = withSpring(-width, {
+      damping: 30,
+      stiffness: 260,
+      overshootClamping: true,
+    });
+  }, [width, translateX]);
+
   const handleBack = useCallback(() => {
+    const targetX = isArchiveOpen ? -width : 0;
+    translateX.value = withSpring(
+      targetX,
+      { damping: 30, stiffness: 260, overshootClamping: true },
+      (finished) => {
+        if (finished) {
+          runOnJS(setActiveChatId)(null);
+        }
+      }
+    );
+  }, [isArchiveOpen, width, translateX]);
+
+  const handleBackFromArchive = useCallback(() => {
     translateX.value = withSpring(
       0,
       { damping: 30, stiffness: 260, overshootClamping: true },
       (finished) => {
         if (finished) {
-          runOnJS(setActiveChatId)(null);
+          runOnJS(setIsArchiveOpen)(false);
         }
       }
     );
@@ -56,6 +81,10 @@ export const RootNavigator: React.FC = () => {
         handleBack();
         return true;
       }
+      if (isArchiveOpen) {
+        handleBackFromArchive();
+        return true;
+      }
       return false;
     };
 
@@ -64,7 +93,7 @@ export const RootNavigator: React.FC = () => {
       onBackPress
     );
     return () => subscription.remove();
-  }, [activeChatId, handleBack]);
+  }, [activeChatId, isArchiveOpen, handleBack, handleBackFromArchive]);
 
   const animatedStyle = useAnimatedStyle(() => ({
     transform: [{ translateX: translateX.value }],
@@ -75,16 +104,32 @@ export const RootNavigator: React.FC = () => {
       <Animated.View
         style={[
           styles.screensContainer,
-          { width: width * 2 },
+          { width: width * 3 },
           animatedStyle,
         ]}
       >
         <View style={{ width, flex: 1 }}>
-          <ChatListPage onOpenChat={handleOpenChat} />
+          <ChatListPage
+            onOpenChat={handleOpenChat}
+            onOpenArchive={handleOpenArchive}
+          />
         </View>
 
         <View style={{ width, flex: 1 }}>
-          {activeChatId ? (
+          {isArchiveOpen ? (
+            <ArchivePage
+              onBack={handleBackFromArchive}
+              onOpenChat={handleOpenChat}
+            />
+          ) : activeChatId ? (
+            <ChatRoomPage chatId={activeChatId} onBack={handleBack} />
+          ) : (
+            <View style={styles.placeholder} />
+          )}
+        </View>
+
+        <View style={{ width, flex: 1 }}>
+          {isArchiveOpen && activeChatId ? (
             <ChatRoomPage chatId={activeChatId} onBack={handleBack} />
           ) : (
             <View style={styles.placeholder} />

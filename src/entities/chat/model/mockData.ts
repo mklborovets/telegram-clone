@@ -17,11 +17,6 @@ export const initialFolders: IChatFolder[] = [
     chatIds: ['chat-3', 'chat-6'],
     isSystem: false,
   },
-  {
-    id: 'archive',
-    title: 'Archive',
-    isSystem: true,
-  },
 ];
 
 export const initialChats: IChat[] = [

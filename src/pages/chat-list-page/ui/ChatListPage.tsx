@@ -11,6 +11,7 @@ import { Menu, Search, FolderPlus, Pencil, X } from 'lucide-react-native';
 import {
   useChatStore,
   filterChatsByFolder,
+  sortChats,
   IChat,
 } from '../../../entities/chat';
 import { ChatList } from '../../../widgets/chat-list';
@@ -21,17 +22,26 @@ import { theme } from '../../../shared/config/theme';
 
 export interface ChatListPageProps {
   onOpenChat: (chat: IChat) => void;
+  onOpenArchive?: () => void;
 }
 
-export const ChatListPage: React.FC<ChatListPageProps> = ({ onOpenChat }) => {
+export const ChatListPage: React.FC<ChatListPageProps> = ({
+  onOpenChat,
+  onOpenArchive,
+}) => {
   const chats = useChatStore((state) => state.chats);
   const folders = useChatStore((state) => state.folders);
   const activeFolderId = useChatStore((state) => state.activeFolderId);
   const setActiveFolderId = useChatStore((state) => state.setActiveFolderId);
   const createFolder = useChatStore((state) => state.createFolder);
 
+  const [searchQuery, setSearchQuery] = useState('');
   const [isFolderModalVisible, setIsFolderModalVisible] = useState(false);
   const [newFolderTitle, setNewFolderTitle] = useState('');
+
+  const archivedChats = useMemo(() => {
+    return sortChats(chats.filter((c) => c.isArchived));
+  }, [chats]);
 
   const tabs = useMemo(() => {
     return folders.map((folder) => {
@@ -68,6 +78,16 @@ export const ChatListPage: React.FC<ChatListPageProps> = ({ onOpenChat }) => {
     setIsFolderModalVisible(false);
   };
 
+  const filterBySearch = (chatList: IChat[]) => {
+    const q = searchQuery.trim().toLowerCase();
+    if (!q) return chatList;
+    return chatList.filter(
+      (c) =>
+        c.title.toLowerCase().includes(q) ||
+        c.lastMessage.toLowerCase().includes(q)
+    );
+  };
+
   return (
     <View style={styles.container}>
       <View style={styles.header}>
@@ -85,9 +105,28 @@ export const ChatListPage: React.FC<ChatListPageProps> = ({ onOpenChat }) => {
           >
             <FolderPlus size={22} color={theme.colors.text} />
           </IconButton>
-          <IconButton size={40}>
-            <Search size={22} color={theme.colors.text} />
-          </IconButton>
+        </View>
+      </View>
+
+      <View style={styles.searchContainer}>
+        <View style={styles.searchBar}>
+          <Search size={18} color={theme.colors.textMuted} style={styles.searchIcon} />
+          <TextInput
+            value={searchQuery}
+            onChangeText={setSearchQuery}
+            placeholder="Search chats or messages"
+            placeholderTextColor={theme.colors.textMuted}
+            style={styles.searchInput}
+          />
+          {searchQuery.length > 0 ? (
+            <Pressable
+              onPress={() => setSearchQuery('')}
+              hitSlop={8}
+              style={styles.clearSearchButton}
+            >
+              <X size={16} color={theme.colors.textMuted} />
+            </Pressable>
+          ) : null}
         </View>
       </View>
 
@@ -97,11 +136,20 @@ export const ChatListPage: React.FC<ChatListPageProps> = ({ onOpenChat }) => {
         onTabChange={handleTabChange}
         renderTabContent={(tab) => {
           const folder = folders.find((f) => f.id === tab.id);
-          const folderChats = folder ? filterChatsByFolder(chats, folder) : [];
+          const rawFolderChats = folder ? filterChatsByFolder(chats, folder) : [];
+          const folderChats = filterBySearch(rawFolderChats);
           return (
             <ChatList
               chats={folderChats}
+              archivedChats={tab.id === 'all' && !searchQuery.trim() ? archivedChats : []}
+              showArchiveCard={tab.id === 'all' && !searchQuery.trim()}
+              onOpenArchive={onOpenArchive}
               onChatPress={onOpenChat}
+              emptyText={
+                searchQuery.trim()
+                  ? `No chats found for "${searchQuery.trim()}"`
+                  : 'No chats found'
+              }
             />
           );
         }}
@@ -186,6 +234,33 @@ const styles = StyleSheet.create({
   headerRight: {
     flexDirection: 'row',
     alignItems: 'center',
+  },
+  searchContainer: {
+    paddingHorizontal: theme.spacing.md,
+    paddingTop: 4,
+    paddingBottom: 8,
+    backgroundColor: theme.colors.card,
+  },
+  searchBar: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: theme.colors.surfaceVariant,
+    borderRadius: 10,
+    paddingHorizontal: 10,
+    height: 36,
+  },
+  searchIcon: {
+    marginRight: 6,
+  },
+  searchInput: {
+    flex: 1,
+    paddingVertical: 0,
+    ...theme.typography.body,
+    fontSize: 15,
+    color: theme.colors.text,
+  },
+  clearSearchButton: {
+    padding: 4,
   },
   fab: {
     position: 'absolute',

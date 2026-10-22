@@ -12,6 +12,8 @@ interface ChatState {
   updateLastMessage: (id: string, text: string, time?: string, isMe?: boolean) => void;
   markAsRead: (id: string) => void;
   toggleRead: (id: string) => void;
+  isArchiveHidden: boolean;
+  setArchiveHidden: (hidden: boolean) => void;
   createFolder: (title: string, chatIds?: string[]) => string;
   deleteFolder: (folderId: string) => void;
   updateFolder: (folderId: string, title: string, chatIds?: string[]) => void;
@@ -47,14 +49,15 @@ export const filterChatsByCategory = (chats: IChat[], category: ChatCategory): I
   return sortChats(filtered);
 };
 
+export const getArchivedChats = (chats: IChat[]): IChat[] => {
+  return sortChats(chats.filter((c) => c.isArchived));
+};
+
 export const filterChatsByFolder = (
   chats: IChat[],
   folder: IChatFolder
 ): IChat[] => {
   const filtered = chats.filter((chat) => {
-    if (folder.id === 'archive') {
-      return chat.isArchived;
-    }
     if (chat.isArchived) {
       return false;
     }
@@ -76,6 +79,8 @@ export const useChatStore = create<ChatState>((set) => ({
   chats: initialChats,
   folders: initialFolders,
   activeFolderId: 'all',
+  isArchiveHidden: false,
+  setArchiveHidden: (hidden: boolean) => set({ isArchiveHidden: hidden }),
 
   togglePin: (id: string) => {
     set((state) => ({

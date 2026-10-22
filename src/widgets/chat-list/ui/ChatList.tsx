@@ -1,26 +1,31 @@
-import React, { useCallback } from 'react';
+import React, { useCallback, useState } from 'react';
 import {
   StyleSheet,
   View,
   Text,
   FlatList,
+  RefreshControl,
   StyleProp,
   ViewStyle,
 } from 'react-native';
 import Animated, { LinearTransition, FadeOut } from 'react-native-reanimated';
-import { IChat } from '../../../entities/chat';
+import { IChat, useChatStore } from '../../../entities/chat';
 import { ChatRow } from '../../../entities/chat';
 import { SwipeableRow } from '../../../shared/ui/swipeable-row';
 import { PinChatAction } from '../../../features/pin-chat';
 import { ArchiveChatAction } from '../../../features/archive-chat';
 import { DeleteChatAction } from '../../../features/delete-chat';
 import { MarkReadChatAction } from '../../../features/mark-read-chat';
+import { ArchiveCard } from './ArchiveCard';
 import { theme } from '../../../shared/config/theme';
 
 const AnimatedFlatList = Animated.createAnimatedComponent(FlatList as new () => FlatList<IChat>);
 
 export interface ChatListProps {
   chats: IChat[];
+  archivedChats?: IChat[];
+  showArchiveCard?: boolean;
+  onOpenArchive?: () => void;
   onChatPress?: (chat: IChat) => void;
   style?: StyleProp<ViewStyle>;
   contentContainerStyle?: StyleProp<ViewStyle>;
@@ -29,11 +34,27 @@ export interface ChatListProps {
 
 export const ChatList: React.FC<ChatListProps> = ({
   chats,
+  archivedChats = [],
+  showArchiveCard = false,
+  onOpenArchive,
   onChatPress,
   style,
   contentContainerStyle,
   emptyText = 'No chats found',
 }) => {
+  const isArchiveHidden = useChatStore((state) => state.isArchiveHidden);
+  const setArchiveHidden = useChatStore((state) => state.setArchiveHidden);
+  const [refreshing, setRefreshing] = useState(false);
+
+  const handleRefresh = useCallback(() => {
+    setRefreshing(true);
+    if (isArchiveHidden) {
+      setArchiveHidden(false);
+    }
+    setTimeout(() => {
+      setRefreshing(false);
+    }, 400);
+  }, [isArchiveHidden, setArchiveHidden]);
   const renderItem = useCallback(
     ({ item }: { item: IChat }) => {
       return (
@@ -77,12 +98,33 @@ export const ChatList: React.FC<ChatListProps> = ({
     );
   }, [emptyText]);
 
+  const renderHeader = useCallback(() => {
+    if (!showArchiveCard || isArchiveHidden || archivedChats.length === 0 || !onOpenArchive) {
+      return null;
+    }
+    return (
+      <ArchiveCard
+        archivedChats={archivedChats}
+        onPress={onOpenArchive}
+        onHide={() => setArchiveHidden(true)}
+      />
+    );
+  }, [showArchiveCard, isArchiveHidden, archivedChats, onOpenArchive, setArchiveHidden]);
+
   return (
     <AnimatedFlatList
       data={chats}
       keyExtractor={(item) => item.id}
       renderItem={renderItem}
+      ListHeaderComponent={renderHeader}
       ListEmptyComponent={renderEmpty}
+      refreshControl={
+        <RefreshControl
+          refreshing={refreshing}
+          onRefresh={handleRefresh}
+          tintColor={theme.colors.primary}
+        />
+      }
       style={[styles.container, style]}
       contentContainerStyle={[styles.contentContainer, contentContainerStyle]}
       showsVerticalScrollIndicator={false}
