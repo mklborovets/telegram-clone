@@ -1,5 +1,9 @@
 import React from 'react';
 import { StyleSheet, View } from 'react-native';
+import Animated, {
+  useAnimatedKeyboard,
+  useAnimatedStyle,
+} from 'react-native-reanimated';
 import { useChatStore } from '../../../entities/chat';
 import { useMessageStore } from '../../../entities/message';
 import { ChatHeader, MessageList } from '../../../widgets/chat-room-view';
@@ -21,6 +25,12 @@ export const ChatRoomPage: React.FC<ChatRoomPageProps> = ({
     (state) => state.messages[chatId] || []
   );
 
+  const keyboard = useAnimatedKeyboard({ isStatusBarTranslucentAndroid: true });
+
+  const keyboardAnimatedStyle = useAnimatedStyle(() => ({
+    paddingBottom: keyboard.height.value,
+  }));
+
   if (!chat) {
     return null;
   }
@@ -28,8 +38,10 @@ export const ChatRoomPage: React.FC<ChatRoomPageProps> = ({
   return (
     <View style={styles.container}>
       <ChatHeader chat={chat} onBack={onBack} />
-      <MessageList messages={messages} />
-      <SendMessageBar chatId={chatId} />
+      <Animated.View style={[styles.chatContent, keyboardAnimatedStyle]}>
+        <MessageList messages={messages} />
+        <SendMessageBar chatId={chatId} />
+      </Animated.View>
     </View>
   );
 };
@@ -38,5 +50,8 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: '#E4ECF2',
+  },
+  chatContent: {
+    flex: 1,
   },
 });

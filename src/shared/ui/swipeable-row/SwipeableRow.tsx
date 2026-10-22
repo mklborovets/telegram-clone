@@ -1,5 +1,5 @@
 import React, { useImperativeHandle, forwardRef } from 'react';
-import { StyleSheet, View, StyleProp, ViewStyle } from 'react-native';
+import { StyleSheet, View, Pressable, StyleProp, ViewStyle } from 'react-native';
 import { Gesture, GestureDetector } from 'react-native-gesture-handler';
 import Animated, {
   useSharedValue,
@@ -61,8 +61,8 @@ export const SwipeableRow = forwardRef<SwipeableRowRef, SwipeableRowProps>(
 
     const panGesture = Gesture.Pan()
       .enabled(enabled)
-      .activeOffsetX([-10, 10])
-      .failOffsetY([-15, 15])
+      .activeOffsetX([-15, 15])
+      .failOffsetY([-10, 10])
       .onStart(() => {
         startX.value = translateX.value;
       })
@@ -115,6 +115,13 @@ export const SwipeableRow = forwardRef<SwipeableRowRef, SwipeableRowProps>(
     const animatedContentStyle = useAnimatedStyle(() => ({
       transform: [{ translateX: translateX.value }],
     }));
+
+    const overlayAnimatedStyle = useAnimatedStyle(() => {
+      const isOpen = Math.abs(translateX.value) > 10;
+      return {
+        display: isOpen ? 'flex' : 'none',
+      };
+    });
 
     const animatedRightStyle = useAnimatedStyle(() => {
       const opacity = interpolate(
@@ -175,6 +182,9 @@ export const SwipeableRow = forwardRef<SwipeableRowRef, SwipeableRowProps>(
         <GestureDetector gesture={panGesture}>
           <Animated.View style={[styles.content, animatedContentStyle]}>
             {children}
+            <Animated.View style={[styles.closeOverlay, overlayAnimatedStyle]}>
+              <Pressable style={StyleSheet.absoluteFill} onPress={triggerClose} />
+            </Animated.View>
           </Animated.View>
         </GestureDetector>
       </View>
@@ -191,6 +201,12 @@ const styles = StyleSheet.create({
   },
   content: {
     backgroundColor: 'transparent',
+    position: 'relative',
+  },
+  closeOverlay: {
+    ...StyleSheet.absoluteFill,
+    backgroundColor: 'transparent',
+    zIndex: 10,
   },
   actionsContainer: {
     position: 'absolute',
