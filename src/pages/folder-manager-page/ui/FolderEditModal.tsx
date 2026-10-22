@@ -3,7 +3,6 @@ import {
   StyleSheet,
   View,
   Text,
-  Modal,
   TextInput,
   Pressable,
   FlatList,
@@ -13,6 +12,7 @@ import { Check, X, Folder, Search } from 'lucide-react-native';
 import { IChat, IChatFolder } from '../../../entities/chat';
 import { Avatar } from '../../../shared/ui/avatar';
 import { CustomButton } from '../../../shared/ui/custom-button';
+import { SlideScreen } from '../../../shared/ui/slide-screen';
 import { theme } from '../../../shared/config/theme';
 
 export interface FolderEditModalProps {
@@ -65,13 +65,8 @@ export const FolderEditModal: React.FC<FolderEditModalProps> = ({
   );
 
   return (
-    <Modal
-      visible={visible}
-      animationType="slide"
-      presentationStyle="pageSheet"
-      onRequestClose={onClose}
-    >
-      <SafeAreaView style={styles.container}>
+    <SlideScreen isOpen={visible} onClose={onClose} zIndex={500}>
+      <SafeAreaView style={styles.container} edges={['top', 'bottom']}>
         <View style={styles.header}>
           <Pressable onPress={onClose} hitSlop={8} style={styles.headerButton}>
             <Text style={styles.headerCancelText}>Cancel</Text>
@@ -174,7 +169,7 @@ export const FolderEditModal: React.FC<FolderEditModalProps> = ({
           }}
         />
       </SafeAreaView>
-    </Modal>
+    </SlideScreen>
   );
 };
 

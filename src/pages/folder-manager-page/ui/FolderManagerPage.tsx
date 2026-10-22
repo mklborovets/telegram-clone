@@ -82,7 +82,7 @@ export const FolderManagerPage: React.FC<FolderManagerPageProps> = ({
   };
 
   return (
-    <SafeAreaView style={styles.container}>
+    <SafeAreaView style={styles.container} edges={['top', 'bottom']}>
       <View style={styles.header}>
         <IconButton size={40} onPress={onBack}>
           <ArrowLeft size={22} color={theme.colors.text} />

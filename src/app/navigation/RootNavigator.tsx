@@ -4,7 +4,6 @@ import {
   View,
   useWindowDimensions,
   BackHandler,
-  Modal,
 } from 'react-native';
 import Animated, {
   useSharedValue,
@@ -18,6 +17,7 @@ import { ArchivePage } from '../../pages/archive-page';
 import { FolderManagerPage } from '../../pages/folder-manager-page';
 import { ChatProfilePage, MyProfilePage } from '../../pages/profile-page';
 import { NavigationDrawer } from '../../widgets/drawer';
+import { SlideScreen } from '../../shared/ui/slide-screen';
 import { IChat, useChatStore } from '../../entities/chat';
 import { useMessageStore } from '../../entities/message';
 
@@ -205,32 +205,29 @@ export const RootNavigator: React.FC = () => {
         onOpenProfile={() => setIsMyProfileOpen(true)}
       />
 
-      <Modal
-        visible={isFolderManagerOpen}
-        animationType="slide"
-        presentationStyle="pageSheet"
-        onRequestClose={() => setIsFolderManagerOpen(false)}
+      <SlideScreen
+        isOpen={isFolderManagerOpen}
+        onClose={() => setIsFolderManagerOpen(false)}
+        zIndex={200}
       >
         <FolderManagerPage onBack={() => setIsFolderManagerOpen(false)} />
-      </Modal>
+      </SlideScreen>
 
-      <Modal
-        visible={isMyProfileOpen}
-        animationType="slide"
-        presentationStyle="pageSheet"
-        onRequestClose={() => setIsMyProfileOpen(false)}
+      <SlideScreen
+        isOpen={isMyProfileOpen}
+        onClose={() => setIsMyProfileOpen(false)}
+        zIndex={210}
       >
         <MyProfilePage
           onBack={() => setIsMyProfileOpen(false)}
           onOpenSavedMessages={handleOpenSavedMessages}
         />
-      </Modal>
+      </SlideScreen>
 
-      <Modal
-        visible={isChatProfileOpen && Boolean(activeChatId)}
-        animationType="slide"
-        presentationStyle="pageSheet"
-        onRequestClose={() => setIsChatProfileOpen(false)}
+      <SlideScreen
+        isOpen={isChatProfileOpen && Boolean(activeChatId)}
+        onClose={() => setIsChatProfileOpen(false)}
+        zIndex={220}
       >
         {activeChatId ? (
           <ChatProfilePage
@@ -242,7 +239,7 @@ export const RootNavigator: React.FC = () => {
             }}
           />
         ) : null}
-      </Modal>
+      </SlideScreen>
     </View>
   );
 };
