@@ -5,4 +5,9 @@ export interface IMessage {
   createdAt: string;
   isMe: boolean;
   isRead?: boolean;
+  isEdited?: boolean;
+  mediaType?: 'photo' | 'file';
+  mediaUri?: string;
+  fileName?: string;
+  fileSize?: string;
 }

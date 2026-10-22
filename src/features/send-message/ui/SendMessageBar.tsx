@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import {
   StyleSheet,
   View,
+  Text,
   TextInput,
   Pressable,
   StyleProp,
@@ -13,23 +14,37 @@ import Animated, {
   withSpring,
   withTiming,
 } from 'react-native-reanimated';
-import { SendHorizontal } from 'lucide-react-native';
-import { useMessageStore } from '../../../entities/message';
+import {
+  SendHorizontal,
+  Pencil,
+  X,
+  Check,
+  Paperclip,
+  Image as ImageIcon,
+  FileText,
+} from 'lucide-react-native';
+import { useMessageStore, IMessage } from '../../../entities/message';
 import { theme } from '../../../shared/config/theme';
 
 export interface SendMessageBarProps {
   chatId: string;
+  editingMessage?: IMessage | null;
+  onCancelEdit?: () => void;
   onSend?: (text: string) => void;
   style?: StyleProp<ViewStyle>;
 }
 
 export const SendMessageBar: React.FC<SendMessageBarProps> = ({
   chatId,
+  editingMessage,
+  onCancelEdit,
   onSend,
   style,
 }) => {
   const [text, setText] = useState('');
+  const [showAttachMenu, setShowAttachMenu] = useState(false);
   const addMessage = useMessageStore((state) => state.addMessage);
+  const editMessage = useMessageStore((state) => state.editMessage);
 
   const scale = useSharedValue(0);
   const opacity = useSharedValue(0);
@@ -37,7 +52,13 @@ export const SendMessageBar: React.FC<SendMessageBarProps> = ({
   const hasText = text.trim().length > 0;
 
   useEffect(() => {
-    if (hasText) {
+    if (editingMessage) {
+      setText(editingMessage.text);
+    }
+  }, [editingMessage]);
+
+  useEffect(() => {
+    if (hasText || editingMessage) {
       scale.value = withSpring(1, {
         damping: 28,
         stiffness: 260,
@@ -52,17 +73,49 @@ export const SendMessageBar: React.FC<SendMessageBarProps> = ({
       });
       opacity.value = withTiming(0, { duration: 150 });
     }
-  }, [hasText, scale, opacity]);
+  }, [hasText, editingMessage, scale, opacity]);
 
   const handleSend = () => {
     const trimmed = text.trim();
     if (!trimmed) return;
 
-    addMessage(chatId, trimmed, true);
+    if (editingMessage) {
+      editMessage(chatId, editingMessage.id, trimmed);
+      if (onCancelEdit) {
+        onCancelEdit();
+      }
+    } else {
+      addMessage(chatId, trimmed, true);
+    }
+
     if (onSend) {
       onSend(trimmed);
     }
     setText('');
+  };
+
+  const handleSendPhoto = () => {
+    setShowAttachMenu(false);
+    addMessage(
+      chatId,
+      'Project screenshot overview',
+      true,
+      'photo',
+      'https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?w=800&q=80'
+    );
+  };
+
+  const handleSendFile = () => {
+    setShowAttachMenu(false);
+    addMessage(
+      chatId,
+      'Specification document v2.4',
+      true,
+      'file',
+      undefined,
+      'Specification_Document_v2.4.pdf',
+      '3.8 MB'
+    );
   };
 
   const animatedButtonStyle = useAnimatedStyle(() => ({
@@ -71,43 +124,169 @@ export const SendMessageBar: React.FC<SendMessageBarProps> = ({
   }));
 
   return (
-    <View style={[styles.container, style]}>
-      <View style={styles.inputContainer}>
-        <TextInput
-          value={text}
-          onChangeText={setText}
-          placeholder="Message"
-          placeholderTextColor={theme.colors.textMuted}
-          multiline
-          style={styles.input}
-        />
-      </View>
+    <View style={[styles.wrapper, style]}>
+      {editingMessage ? (
+        <View style={styles.editBanner}>
+          <Pencil size={18} color={theme.colors.primary} style={styles.editBannerIcon} />
+          <View style={styles.editBannerText}>
+            <Text style={styles.editBannerTitle}>Edit Message</Text>
+            <Text style={styles.editBannerSubtitle} numberOfLines={1}>
+              {editingMessage.text}
+            </Text>
+          </View>
+          <Pressable
+            onPress={() => {
+              setText('');
+              if (onCancelEdit) {
+                onCancelEdit();
+              }
+            }}
+            hitSlop={8}
+            style={styles.editBannerClose}
+          >
+            <X size={18} color={theme.colors.textMuted} />
+          </Pressable>
+        </View>
+      ) : null}
 
-      <Animated.View style={[styles.buttonWrapper, animatedButtonStyle]}>
+      {showAttachMenu ? (
+        <View style={styles.attachMenu}>
+          <Pressable onPress={handleSendPhoto} style={styles.attachOption}>
+            <View style={[styles.attachIconBg, { backgroundColor: '#34C759' }]}>
+              <ImageIcon size={18} color={theme.colors.white} />
+            </View>
+            <Text style={styles.attachOptionText}>Photo</Text>
+          </Pressable>
+          <Pressable onPress={handleSendFile} style={styles.attachOption}>
+            <View style={[styles.attachIconBg, { backgroundColor: '#007AFF' }]}>
+              <FileText size={18} color={theme.colors.white} />
+            </View>
+            <Text style={styles.attachOptionText}>File</Text>
+          </Pressable>
+        </View>
+      ) : null}
+
+      <View style={styles.inputRow}>
         <Pressable
-          onPress={handleSend}
-          disabled={!hasText}
-          style={({ pressed }) => [
-            styles.sendButton,
-            pressed && styles.sendButtonPressed,
-          ]}
+          onPress={() => setShowAttachMenu((prev) => !prev)}
+          hitSlop={8}
+          style={styles.attachButton}
         >
-          <SendHorizontal size={20} color={theme.colors.white} />
+          <Paperclip
+            size={22}
+            color={showAttachMenu ? theme.colors.primary : theme.colors.textMuted}
+          />
         </Pressable>
-      </Animated.View>
+
+        <View style={styles.inputContainer}>
+          <TextInput
+            value={text}
+            onChangeText={setText}
+            placeholder={editingMessage ? 'Edit message' : 'Message'}
+            placeholderTextColor={theme.colors.textMuted}
+            multiline
+            style={styles.input}
+          />
+        </View>
+
+        <Animated.View style={[styles.buttonWrapper, animatedButtonStyle]}>
+          <Pressable
+            onPress={handleSend}
+            disabled={!hasText && !editingMessage}
+            style={({ pressed }) => [
+              styles.sendButton,
+              pressed && styles.sendButtonPressed,
+            ]}
+          >
+            {editingMessage ? (
+              <Check size={20} color={theme.colors.white} />
+            ) : (
+              <SendHorizontal size={20} color={theme.colors.white} />
+            )}
+          </Pressable>
+        </Animated.View>
+      </View>
     </View>
   );
 };
 
 const styles = StyleSheet.create({
-  container: {
+  wrapper: {
+    backgroundColor: theme.colors.card,
+    borderTopWidth: StyleSheet.hairlineWidth,
+    borderTopColor: theme.colors.border,
+  },
+  editBanner: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: theme.spacing.md,
+    paddingVertical: 8,
+    backgroundColor: theme.colors.surfaceVariant,
+    borderBottomWidth: StyleSheet.hairlineWidth,
+    borderBottomColor: theme.colors.border,
+  },
+  editBannerIcon: {
+    marginRight: 10,
+  },
+  editBannerText: {
+    flex: 1,
+    justifyContent: 'center',
+  },
+  editBannerTitle: {
+    ...theme.typography.caption,
+    fontSize: 12,
+    fontWeight: '600',
+    color: theme.colors.primary,
+  },
+  editBannerSubtitle: {
+    ...theme.typography.caption,
+    fontSize: 12,
+    color: theme.colors.textSecondary,
+    marginTop: 1,
+  },
+  editBannerClose: {
+    padding: 4,
+  },
+  attachMenu: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: theme.spacing.lg,
+    paddingVertical: 10,
+    backgroundColor: theme.colors.card,
+    borderBottomWidth: StyleSheet.hairlineWidth,
+    borderBottomColor: theme.colors.border,
+    gap: 20,
+  },
+  attachOption: {
+    alignItems: 'center',
+  },
+  attachIconBg: {
+    width: 44,
+    height: 44,
+    borderRadius: 22,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginBottom: 4,
+  },
+  attachOptionText: {
+    ...theme.typography.caption,
+    fontSize: 12,
+    color: theme.colors.textSecondary,
+    fontWeight: '500',
+  },
+  inputRow: {
     flexDirection: 'row',
     alignItems: 'flex-end',
     paddingHorizontal: theme.spacing.md,
     paddingVertical: theme.spacing.sm,
-    backgroundColor: theme.colors.card,
-    borderTopWidth: StyleSheet.hairlineWidth,
-    borderTopColor: theme.colors.border,
+  },
+  attachButton: {
+    width: 36,
+    height: 40,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginRight: 4,
+    marginBottom: 0,
   },
   inputContainer: {
     flex: 1,

@@ -11,7 +11,7 @@ interface ChatState {
   togglePin: (id: string) => void;
   toggleArchive: (id: string) => void;
   deleteChat: (id: string) => void;
-  updateLastMessage: (id: string, text: string, time?: string, isMe?: boolean) => void;
+  updateLastMessage: (id: string, text: string, time?: string, isMe?: boolean, mediaType?: 'photo' | 'file') => void;
   markAsRead: (id: string) => void;
   toggleRead: (id: string) => void;
   isArchiveHidden: boolean;
@@ -128,7 +128,7 @@ export const useChatStore = create<ChatState>()(
         }));
       },
 
-      updateLastMessage: (id: string, text: string, time?: string, isMe = true) => {
+      updateLastMessage: (id: string, text: string, time?: string, isMe = true, mediaType?: 'photo' | 'file') => {
         const timestamp = time || new Date().toISOString();
         set((state) => ({
           chats: state.chats.map((chat) => {
@@ -139,6 +139,7 @@ export const useChatStore = create<ChatState>()(
                 lastMessageTime: timestamp,
                 lastMessageSenderMe: isMe,
                 lastMessageRead: true,
+                lastMessageMediaType: mediaType,
               };
             }
             return chat;
@@ -290,7 +291,19 @@ export const useChatStore = create<ChatState>()(
     }),
     {
       name: 'telegram-chats-storage',
+      version: 2,
       storage: createJSONStorage(() => safeAsyncStorage),
+      migrate: (persistedState: any, version: number) => {
+        if (version < 2) {
+          return {
+            chats: initialChats,
+            folders: initialFolders,
+            activeFolderId: 'all',
+            isArchiveHidden: false,
+          };
+        }
+        return persistedState;
+      },
       partialize: (state) => ({
         chats: state.chats,
         folders: state.folders,

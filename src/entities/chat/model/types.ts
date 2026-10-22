@@ -13,6 +13,7 @@ export interface IChat {
   lastMessageRead?: boolean;
   pinnedAt?: number;
   folderIds?: string[];
+  lastMessageMediaType?: 'photo' | 'file';
 }
 
 export type ChatCategory = 'all' | 'personal' | 'archive';

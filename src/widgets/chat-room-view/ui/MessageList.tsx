@@ -13,12 +13,14 @@ import { theme } from '../../../shared/config/theme';
 
 export interface MessageListProps {
   messages: IMessage[];
+  onMessageLongPress?: (message: IMessage) => void;
   style?: StyleProp<ViewStyle>;
   contentContainerStyle?: StyleProp<ViewStyle>;
 }
 
 export const MessageList: React.FC<MessageListProps> = ({
   messages,
+  onMessageLongPress,
   style,
   contentContainerStyle,
 }) => {
@@ -27,7 +29,12 @@ export const MessageList: React.FC<MessageListProps> = ({
   }, [messages]);
 
   const renderItem = ({ item }: { item: IMessage }) => {
-    return <MessageBubble message={item} />;
+    return (
+      <MessageBubble
+        message={item}
+        onLongPress={onMessageLongPress}
+      />
+    );
   };
 
   const renderEmpty = () => {

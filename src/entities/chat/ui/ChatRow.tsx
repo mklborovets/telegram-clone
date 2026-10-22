@@ -7,7 +7,7 @@ import {
   StyleProp,
   ViewStyle,
 } from 'react-native';
-import { Pin, CheckCheck, Check } from 'lucide-react-native';
+import { Pin, CheckCheck, Check, Camera, FileText } from 'lucide-react-native';
 import { IChat } from '../model/types';
 import { Avatar } from '../../../shared/ui/avatar';
 import { theme } from '../../../shared/config/theme';
@@ -79,9 +79,25 @@ export const ChatRow: React.FC<ChatRowProps> = ({ chat, onPress, style }) => {
           </View>
 
           <View style={styles.footerRow}>
-            <Text style={styles.lastMessage} numberOfLines={1}>
-              {chat.lastMessage}
-            </Text>
+            <View style={styles.lastMessageContainer}>
+              {chat.lastMessageMediaType === 'photo' ? (
+                <Camera
+                  size={14}
+                  color={theme.colors.primary}
+                  style={styles.mediaIcon}
+                />
+              ) : chat.lastMessageMediaType === 'file' ? (
+                <FileText
+                  size={14}
+                  color={theme.colors.primary}
+                  style={styles.mediaIcon}
+                />
+              ) : null}
+
+              <Text style={styles.lastMessage} numberOfLines={1}>
+                {chat.lastMessage}
+              </Text>
+            </View>
 
             <View style={styles.badgeContainer}>
               {chat.isPinned ? (
@@ -162,11 +178,19 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'space-between',
   },
+  lastMessageContainer: {
+    flex: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginRight: theme.spacing.sm,
+  },
+  mediaIcon: {
+    marginRight: 4,
+  },
   lastMessage: {
     ...theme.typography.subtitle,
     flex: 1,
     color: theme.colors.textSecondary,
-    marginRight: theme.spacing.sm,
   },
   badgeContainer: {
     flexDirection: 'row',
