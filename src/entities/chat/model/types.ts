@@ -12,6 +12,14 @@ export interface IChat {
   lastMessageSenderMe?: boolean;
   lastMessageRead?: boolean;
   pinnedAt?: number;
+  folderIds?: string[];
 }
 
 export type ChatCategory = 'all' | 'personal' | 'archive';
+
+export interface IChatFolder {
+  id: string;
+  title: string;
+  chatIds?: string[];
+  isSystem?: boolean;
+}

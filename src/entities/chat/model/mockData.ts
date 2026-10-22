@@ -1,4 +1,28 @@
-import { IChat } from './types';
+import { IChat, IChatFolder } from './types';
+
+export const initialFolders: IChatFolder[] = [
+  {
+    id: 'all',
+    title: 'All Chats',
+    isSystem: true,
+  },
+  {
+    id: 'personal',
+    title: 'Personal',
+    isSystem: true,
+  },
+  {
+    id: 'work',
+    title: 'Work',
+    chatIds: ['chat-3', 'chat-6'],
+    isSystem: false,
+  },
+  {
+    id: 'archive',
+    title: 'Archive',
+    isSystem: true,
+  },
+];
 
 export const initialChats: IChat[] = [
   {
@@ -15,6 +39,7 @@ export const initialChats: IChat[] = [
     lastMessageSenderMe: true,
     lastMessageRead: true,
     pinnedAt: Date.now() - 1000 * 60 * 5,
+    folderIds: ['personal'],
   },
   {
     id: 'chat-2',
@@ -30,6 +55,7 @@ export const initialChats: IChat[] = [
     lastMessageSenderMe: false,
     lastMessageRead: false,
     pinnedAt: Date.now() - 1000 * 60 * 18,
+    folderIds: ['personal'],
   },
   {
     id: 'chat-3',
@@ -44,6 +70,7 @@ export const initialChats: IChat[] = [
     isOnline: false,
     lastMessageSenderMe: false,
     lastMessageRead: false,
+    folderIds: ['work'],
   },
   {
     id: 'chat-4',
@@ -58,6 +85,7 @@ export const initialChats: IChat[] = [
     isOnline: false,
     lastMessageSenderMe: true,
     lastMessageRead: true,
+    folderIds: ['personal'],
   },
   {
     id: 'chat-5',
@@ -72,6 +100,7 @@ export const initialChats: IChat[] = [
     isOnline: false,
     lastMessageSenderMe: false,
     lastMessageRead: true,
+    folderIds: [],
   },
   {
     id: 'chat-6',
@@ -86,6 +115,7 @@ export const initialChats: IChat[] = [
     isOnline: false,
     lastMessageSenderMe: false,
     lastMessageRead: true,
+    folderIds: ['personal', 'work'],
   },
   {
     id: 'chat-7',
@@ -100,6 +130,7 @@ export const initialChats: IChat[] = [
     isOnline: false,
     lastMessageSenderMe: false,
     lastMessageRead: false,
+    folderIds: [],
   },
   {
     id: 'chat-8',
@@ -114,5 +145,6 @@ export const initialChats: IChat[] = [
     isOnline: false,
     lastMessageSenderMe: false,
     lastMessageRead: true,
+    folderIds: [],
   },
 ];
