@@ -7,8 +7,8 @@ import {
   TextInput,
   Pressable,
   FlatList,
-  SafeAreaView,
 } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import { Check, X, Folder, Search } from 'lucide-react-native';
 import { IChat, IChatFolder } from '../../../entities/chat';
 import { Avatar } from '../../../shared/ui/avatar';
