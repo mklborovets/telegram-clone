@@ -26,6 +26,12 @@ export interface ChatRoomPageProps {
 
 const EMPTY_MESSAGES: IMessage[] = [];
 
+interface ChatRoomUIState {
+  selectedMessage: IMessage | null;
+  editingMessage: IMessage | null;
+  toastMessage: string | null;
+}
+
 export const ChatRoomPage: React.FC<ChatRoomPageProps> = ({
   chatId,
   onBack,
@@ -38,9 +44,13 @@ export const ChatRoomPage: React.FC<ChatRoomPageProps> = ({
   );
   const deleteMessage = useMessageStore((state) => state.deleteMessage);
 
-  const [selectedMessage, setSelectedMessage] = useState<IMessage | null>(null);
-  const [editingMessage, setEditingMessage] = useState<IMessage | null>(null);
-  const [toastMessage, setToastMessage] = useState<string | null>(null);
+  const [uiState, setUiState] = useState<ChatRoomUIState>({
+    selectedMessage: null,
+    editingMessage: null,
+    toastMessage: null,
+  });
+
+  const { selectedMessage, editingMessage, toastMessage } = uiState;
 
   const keyboard = useAnimatedKeyboard({ isStatusBarTranslucentAndroid: true });
 
@@ -52,6 +62,21 @@ export const ChatRoomPage: React.FC<ChatRoomPageProps> = ({
     return null;
   }
 
+  const setSelectedMessage = (msg: IMessage | null) => {
+    setUiState((prev) => ({ ...prev, selectedMessage: msg }));
+  };
+
+  const setEditingMessage = (msg: IMessage | null) => {
+    setUiState((prev) => ({ ...prev, editingMessage: msg }));
+  };
+
+  const showToast = (message: string) => {
+    setUiState((prev) => ({ ...prev, toastMessage: message }));
+    setTimeout(() => {
+      setUiState((prev) => ({ ...prev, toastMessage: null }));
+    }, 2000);
+  };
+
   const handleMessageLongPress = (msg: IMessage) => {
     setSelectedMessage(msg);
   };
@@ -59,8 +84,11 @@ export const ChatRoomPage: React.FC<ChatRoomPageProps> = ({
   const handleStartEdit = () => {
     if (selectedMessage) {
       const msgToEdit = selectedMessage;
-      setSelectedMessage(null);
-      setEditingMessage(msgToEdit);
+      setUiState((prev) => ({
+        ...prev,
+        selectedMessage: null,
+        editingMessage: msgToEdit,
+      }));
     }
   };
 
@@ -76,8 +104,7 @@ export const ChatRoomPage: React.FC<ChatRoomPageProps> = ({
       const textToCopy = selectedMessage.text || selectedMessage.fileName || '';
       if (textToCopy) {
         copyToClipboard(textToCopy);
-        setToastMessage('Text copied to clipboard');
-        setTimeout(() => setToastMessage(null), 2000);
+        showToast('Text copied to clipboard');
       }
       setSelectedMessage(null);
     }
