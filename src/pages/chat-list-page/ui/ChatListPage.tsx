@@ -1,11 +1,13 @@
-import React, { useMemo, useState } from 'react';
+import React, { useMemo, useState, useEffect, useRef, useCallback } from 'react';
 import {
   StyleSheet,
   View,
   Text,
   Modal,
   TextInput,
+  type TextInputInstance,
   Pressable,
+  Keyboard,
 } from 'react-native';
 import { Menu, Search, FolderPlus, Pencil, X } from 'lucide-react-native';
 import {
@@ -35,9 +37,19 @@ export const ChatListPage: React.FC<ChatListPageProps> = ({
   const setActiveFolderId = useChatStore((state) => state.setActiveFolderId);
   const createFolder = useChatStore((state) => state.createFolder);
 
+  const searchInputRef = useRef<TextInputInstance>(null);
   const [searchQuery, setSearchQuery] = useState('');
+  const [debouncedQuery, setDebouncedQuery] = useState('');
+  const [isSearchFocused, setIsSearchFocused] = useState(false);
   const [isFolderModalVisible, setIsFolderModalVisible] = useState(false);
   const [newFolderTitle, setNewFolderTitle] = useState('');
+
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setDebouncedQuery(searchQuery);
+    }, 350);
+    return () => clearTimeout(timer);
+  }, [searchQuery]);
 
   const archivedChats = useMemo(() => {
     return sortChats(chats.filter((c) => c.isArchived));
@@ -63,11 +75,40 @@ export const ChatListPage: React.FC<ChatListPageProps> = ({
     return idx >= 0 ? idx : 0;
   }, [folders, activeFolderId]);
 
-  const handleTabChange = (index: number) => {
+  const handleDismissKeyboard = useCallback(() => {
+    searchInputRef.current?.blur();
+    Keyboard.dismiss();
+  }, []);
+
+  const handleClearSearch = useCallback(() => {
+    setSearchQuery('');
+    setDebouncedQuery('');
+  }, []);
+
+  const handleCancelSearch = useCallback(() => {
+    setSearchQuery('');
+    setDebouncedQuery('');
+    handleDismissKeyboard();
+  }, [handleDismissKeyboard]);
+
+  const handleTabChange = useCallback((index: number) => {
+    handleDismissKeyboard();
     if (folders[index]) {
       setActiveFolderId(folders[index].id);
     }
-  };
+  }, [folders, handleDismissKeyboard, setActiveFolderId]);
+
+  const handleOpenChat = useCallback((chat: IChat) => {
+    handleDismissKeyboard();
+    onOpenChat(chat);
+  }, [handleDismissKeyboard, onOpenChat]);
+
+  const handleOpenArchive = useCallback(() => {
+    handleDismissKeyboard();
+    if (onOpenArchive) {
+      onOpenArchive();
+    }
+  }, [handleDismissKeyboard, onOpenArchive]);
 
   const handleCreateFolder = () => {
     const trimmed = newFolderTitle.trim();
@@ -78,21 +119,21 @@ export const ChatListPage: React.FC<ChatListPageProps> = ({
     setIsFolderModalVisible(false);
   };
 
-  const filterBySearch = (chatList: IChat[]) => {
-    const q = searchQuery.trim().toLowerCase();
+  const filterBySearch = useCallback((chatList: IChat[]) => {
+    const q = debouncedQuery.trim().toLowerCase();
     if (!q) return chatList;
     return chatList.filter(
       (c) =>
         c.title.toLowerCase().includes(q) ||
         c.lastMessage.toLowerCase().includes(q)
     );
-  };
+  }, [debouncedQuery]);
 
   return (
     <View style={styles.container}>
       <View style={styles.header}>
         <View style={styles.headerLeft}>
-          <IconButton size={40}>
+          <IconButton size={40} onPress={handleDismissKeyboard}>
             <Menu size={24} color={theme.colors.text} />
           </IconButton>
           <Text style={styles.headerTitle}>Telegram</Text>
@@ -101,7 +142,10 @@ export const ChatListPage: React.FC<ChatListPageProps> = ({
         <View style={styles.headerRight}>
           <IconButton
             size={40}
-            onPress={() => setIsFolderModalVisible(true)}
+            onPress={() => {
+              handleDismissKeyboard();
+              setIsFolderModalVisible(true);
+            }}
           >
             <FolderPlus size={22} color={theme.colors.text} />
           </IconButton>
@@ -109,22 +153,39 @@ export const ChatListPage: React.FC<ChatListPageProps> = ({
       </View>
 
       <View style={styles.searchContainer}>
-        <View style={styles.searchBar}>
-          <Search size={18} color={theme.colors.textMuted} style={styles.searchIcon} />
-          <TextInput
-            value={searchQuery}
-            onChangeText={setSearchQuery}
-            placeholder="Search chats or messages"
-            placeholderTextColor={theme.colors.textMuted}
-            style={styles.searchInput}
-          />
-          {searchQuery.length > 0 ? (
+        <View style={styles.searchRow}>
+          <View style={styles.searchBar}>
+            <Search size={18} color={theme.colors.textMuted} style={styles.searchIcon} />
+            <TextInput
+              ref={searchInputRef}
+              value={searchQuery}
+              onChangeText={setSearchQuery}
+              onFocus={() => setIsSearchFocused(true)}
+              onBlur={() => setIsSearchFocused(false)}
+              placeholder="Search chats or messages"
+              placeholderTextColor={theme.colors.textMuted}
+              style={styles.searchInput}
+              returnKeyType="search"
+              onSubmitEditing={handleDismissKeyboard}
+            />
+            {searchQuery.length > 0 ? (
+              <Pressable
+                onPress={handleClearSearch}
+                hitSlop={8}
+                style={styles.clearSearchButton}
+              >
+                <X size={16} color={theme.colors.textMuted} />
+              </Pressable>
+            ) : null}
+          </View>
+
+          {isSearchFocused || searchQuery.length > 0 ? (
             <Pressable
-              onPress={() => setSearchQuery('')}
+              onPress={handleCancelSearch}
               hitSlop={8}
-              style={styles.clearSearchButton}
+              style={styles.cancelSearchButton}
             >
-              <X size={16} color={theme.colors.textMuted} />
+              <Text style={styles.cancelSearchText}>Cancel</Text>
             </Pressable>
           ) : null}
         </View>
@@ -141,13 +202,14 @@ export const ChatListPage: React.FC<ChatListPageProps> = ({
           return (
             <ChatList
               chats={folderChats}
-              archivedChats={tab.id === 'all' && !searchQuery.trim() ? archivedChats : []}
-              showArchiveCard={tab.id === 'all' && !searchQuery.trim()}
-              onOpenArchive={onOpenArchive}
-              onChatPress={onOpenChat}
+              archivedChats={tab.id === 'all' && !searchQuery.trim() && !debouncedQuery.trim() ? archivedChats : []}
+              showArchiveCard={tab.id === 'all' && !searchQuery.trim() && !debouncedQuery.trim()}
+              onOpenArchive={handleOpenArchive}
+              onChatPress={handleOpenChat}
+              onScrollBeginDrag={handleDismissKeyboard}
               emptyText={
-                searchQuery.trim()
-                  ? `No chats found for "${searchQuery.trim()}"`
+                debouncedQuery.trim()
+                  ? `No chats found for "${debouncedQuery.trim()}"`
                   : 'No chats found'
               }
             />
@@ -241,7 +303,12 @@ const styles = StyleSheet.create({
     paddingBottom: 8,
     backgroundColor: theme.colors.card,
   },
+  searchRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
   searchBar: {
+    flex: 1,
     flexDirection: 'row',
     alignItems: 'center',
     backgroundColor: theme.colors.surfaceVariant,
@@ -261,6 +328,17 @@ const styles = StyleSheet.create({
   },
   clearSearchButton: {
     padding: 4,
+  },
+  cancelSearchButton: {
+    marginLeft: theme.spacing.sm,
+    paddingVertical: 4,
+    paddingHorizontal: 4,
+  },
+  cancelSearchText: {
+    ...theme.typography.body,
+    color: theme.colors.primary,
+    fontSize: 15,
+    fontWeight: '500',
   },
   fab: {
     position: 'absolute',

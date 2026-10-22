@@ -1,16 +1,16 @@
-import React from 'react';
+import React, { useState } from 'react';
 import {
   StyleSheet,
   View,
   Text,
   Pressable,
-  Alert,
   StyleProp,
   ViewStyle,
 } from 'react-native';
 import Animated, { LinearTransition, FadeOut } from 'react-native-reanimated';
 import { Archive } from 'lucide-react-native';
 import { IChat } from '../../../entities/chat';
+import { ActionModal } from '../../../shared/ui/action-modal';
 import { theme } from '../../../shared/config/theme';
 import { formatChatTimestamp } from '../../../shared/lib/formatTime';
 
@@ -27,6 +27,8 @@ export const ArchiveCard: React.FC<ArchiveCardProps> = ({
   onHide,
   style,
 }) => {
+  const [isHideModalVisible, setIsHideModalVisible] = useState(false);
+
   if (archivedChats.length === 0) {
     return null;
   }
@@ -38,86 +40,90 @@ export const ArchiveCard: React.FC<ArchiveCardProps> = ({
   );
 
   const handleLongPress = () => {
-    Alert.alert(
-      'Hide Archive',
-      'Hide Archived Chats from your main chat list? You can pull down on the list at any time to restore it.',
-      [
-        {
-          text: 'Cancel',
-          style: 'cancel',
-        },
-        {
-          text: 'Hide',
-          style: 'destructive',
-          onPress: () => {
-            if (onHide) {
-              onHide();
-            }
-          },
-        },
-      ]
-    );
+    setIsHideModalVisible(true);
+  };
+
+  const handleConfirmHide = () => {
+    setIsHideModalVisible(false);
+    if (onHide) {
+      onHide();
+    }
   };
 
   return (
-    <Animated.View
-      layout={LinearTransition.springify().damping(30).stiffness(240).overshootClamping(1)}
-      exiting={FadeOut.duration(200)}
-    >
-      <Pressable
-        onPress={onPress}
-        onLongPress={handleLongPress}
-        delayLongPress={400}
-        style={({ pressed }) => [
-          styles.container,
-          pressed && styles.pressed,
-          style,
-        ]}
+    <>
+      <Animated.View
+        layout={LinearTransition.springify().damping(30).stiffness(240).overshootClamping(1)}
+        exiting={FadeOut.duration(200)}
       >
-        <View style={styles.content}>
-          <View style={styles.archiveAvatar}>
-            <Archive size={24} color={theme.colors.white} />
-          </View>
+        <Pressable
+          onPress={onPress}
+          onLongPress={handleLongPress}
+          delayLongPress={400}
+          style={({ pressed }) => [
+            styles.container,
+            pressed && styles.pressed,
+            style,
+          ]}
+        >
+          <View style={styles.content}>
+            <View style={styles.archiveAvatar}>
+              <Archive size={24} color={theme.colors.white} />
+            </View>
 
-          <View style={styles.textContainer}>
-            <View style={styles.headerRow}>
-              <Text style={styles.title} numberOfLines={1}>
-                Archived Chats
-              </Text>
-
-              {latestChat ? (
-                <Text
-                  style={[
-                    styles.time,
-                    totalUnread > 0 && styles.timeActive,
-                  ]}
-                >
-                  {formatChatTimestamp(latestChat.lastMessageTime)}
+            <View style={styles.textContainer}>
+              <View style={styles.headerRow}>
+                <Text style={styles.title} numberOfLines={1}>
+                  Archived Chats
                 </Text>
-              ) : null}
-            </View>
 
-            <View style={styles.footerRow}>
-              <Text style={styles.subtitle} numberOfLines={1}>
-                {latestChat
-                  ? `${latestChat.title}: ${latestChat.lastMessage}`
-                  : `${archivedChats.length} chats`}
-              </Text>
-
-              {totalUnread > 0 ? (
-                <View style={styles.unreadBadge}>
-                  <Text style={styles.unreadCountText}>
-                    {totalUnread > 99 ? '99+' : totalUnread}
+                {latestChat ? (
+                  <Text
+                    style={[
+                      styles.time,
+                      totalUnread > 0 && styles.timeActive,
+                    ]}
+                  >
+                    {formatChatTimestamp(latestChat.lastMessageTime)}
                   </Text>
-                </View>
-              ) : null}
+                ) : null}
+              </View>
+
+              <View style={styles.footerRow}>
+                <Text style={styles.subtitle} numberOfLines={1}>
+                  {latestChat
+                    ? `${latestChat.title}: ${latestChat.lastMessage}`
+                    : `${archivedChats.length} chats`}
+                </Text>
+
+                {totalUnread > 0 ? (
+                  <View style={styles.unreadBadge}>
+                    <Text style={styles.unreadCountText}>
+                      {totalUnread > 99 ? '99+' : totalUnread}
+                    </Text>
+                  </View>
+                ) : null}
+              </View>
             </View>
           </View>
-        </View>
 
-        <View style={styles.divider} />
-      </Pressable>
-    </Animated.View>
+          <View style={styles.divider} />
+        </Pressable>
+      </Animated.View>
+
+      <ActionModal
+        visible={isHideModalVisible}
+        onClose={() => setIsHideModalVisible(false)}
+        title="Hide Archive"
+        message="Hide Archived Chats from your main chat list? You can pull down on the list at any time to restore it."
+        icon={<Archive size={28} color={theme.colors.danger} />}
+        iconBackgroundColor="rgba(255, 59, 48, 0.12)"
+        confirmText="Hide"
+        confirmVariant="danger"
+        cancelText="Cancel"
+        onConfirm={handleConfirmHide}
+      />
+    </>
   );
 };
 

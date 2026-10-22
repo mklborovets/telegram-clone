@@ -27,6 +27,7 @@ export interface ChatListProps {
   showArchiveCard?: boolean;
   onOpenArchive?: () => void;
   onChatPress?: (chat: IChat) => void;
+  onScrollBeginDrag?: () => void;
   style?: StyleProp<ViewStyle>;
   contentContainerStyle?: StyleProp<ViewStyle>;
   emptyText?: string;
@@ -38,6 +39,7 @@ export const ChatList: React.FC<ChatListProps> = ({
   showArchiveCard = false,
   onOpenArchive,
   onChatPress,
+  onScrollBeginDrag,
   style,
   contentContainerStyle,
   emptyText = 'No chats found',
@@ -128,6 +130,9 @@ export const ChatList: React.FC<ChatListProps> = ({
       style={[styles.container, style]}
       contentContainerStyle={[styles.contentContainer, contentContainerStyle]}
       showsVerticalScrollIndicator={false}
+      keyboardDismissMode="on-drag"
+      keyboardShouldPersistTaps="handled"
+      onScrollBeginDrag={onScrollBeginDrag}
     />
   );
 };
