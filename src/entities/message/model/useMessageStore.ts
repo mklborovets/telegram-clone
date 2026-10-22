@@ -8,6 +8,7 @@ interface MessageState {
   addMessage: (chatId: string, text: string, isMe?: boolean) => IMessage;
   getMessagesByChatId: (chatId: string) => IMessage[];
   markAsRead: (chatId: string) => void;
+  toggleRead: (chatId: string) => void;
 }
 
 export const useMessageStore = create<MessageState>((set, get) => ({
@@ -57,6 +58,38 @@ export const useMessageStore = create<MessageState>((set, get) => ({
           ),
         },
       };
+    });
+  },
+
+  toggleRead: (chatId: string) => {
+    set((state) => {
+      const chatMessages = state.messages[chatId];
+      if (!chatMessages || chatMessages.length === 0) {
+        return state;
+      }
+      const hasUnread = chatMessages.some((msg) => !msg.isMe && !msg.isRead);
+      if (hasUnread) {
+        return {
+          messages: {
+            ...state.messages,
+            [chatId]: chatMessages.map((msg) =>
+              msg.isRead ? msg : { ...msg, isRead: true }
+            ),
+          },
+        };
+      } else {
+        const lastIndex = chatMessages.length - 1;
+        return {
+          messages: {
+            ...state.messages,
+            [chatId]: chatMessages.map((msg, index) =>
+              index === lastIndex && !msg.isMe
+                ? { ...msg, isRead: false }
+                : msg
+            ),
+          },
+        };
+      }
     });
   },
 }));

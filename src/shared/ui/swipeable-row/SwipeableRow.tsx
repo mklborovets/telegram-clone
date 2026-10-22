@@ -1,5 +1,12 @@
 import React, { useImperativeHandle, forwardRef } from 'react';
-import { StyleSheet, View, Pressable, StyleProp, ViewStyle } from 'react-native';
+import {
+  StyleSheet,
+  View,
+  Pressable,
+  Dimensions,
+  StyleProp,
+  ViewStyle,
+} from 'react-native';
 import { Gesture, GestureDetector } from 'react-native-gesture-handler';
 import Animated, {
   useSharedValue,
@@ -9,6 +16,8 @@ import Animated, {
   interpolate,
   Extrapolation,
 } from 'react-native-reanimated';
+
+const SCREEN_WIDTH = Dimensions.get('window').width;
 
 export interface SwipeableRowRef {
   close: () => void;
@@ -20,6 +29,7 @@ export interface SwipeableRowProps {
   renderLeftActions?: (close: () => void) => React.ReactNode;
   rightActionsWidth?: number;
   leftActionsWidth?: number;
+  edgeThreshold?: number;
   onOpen?: () => void;
   onClose?: () => void;
   style?: StyleProp<ViewStyle>;
@@ -34,6 +44,7 @@ export const SwipeableRow = forwardRef<SwipeableRowRef, SwipeableRowProps>(
       renderLeftActions,
       rightActionsWidth = 180,
       leftActionsWidth = 80,
+      edgeThreshold = 0.25,
       onOpen,
       onClose,
       style,
@@ -43,6 +54,8 @@ export const SwipeableRow = forwardRef<SwipeableRowRef, SwipeableRowProps>(
   ) => {
     const translateX = useSharedValue(0);
     const startX = useSharedValue(0);
+    const touchStartX = useSharedValue(0);
+    const touchStartY = useSharedValue(0);
 
     const closeRow = () => {
       'worklet';
@@ -65,8 +78,46 @@ export const SwipeableRow = forwardRef<SwipeableRowRef, SwipeableRowProps>(
 
     const panGesture = Gesture.Pan()
       .enabled(enabled)
-      .activeOffsetX([-15, 15])
-      .failOffsetY([-10, 10])
+      .manualActivation(true)
+      .onTouchesDown((event) => {
+        'worklet';
+        if (event.allTouches && event.allTouches.length > 0) {
+          touchStartX.value = event.allTouches[0].x;
+          touchStartY.value = event.allTouches[0].y;
+        }
+      })
+      .onTouchesMove((event, stateManager) => {
+        'worklet';
+        if (!event.allTouches || event.allTouches.length === 0) return;
+        const currentX = event.allTouches[0].x;
+        const currentY = event.allTouches[0].y;
+        const dx = currentX - touchStartX.value;
+        const dy = currentY - touchStartY.value;
+
+        if (Math.abs(dy) > 10 && Math.abs(dy) > Math.abs(dx)) {
+          stateManager.fail();
+          return;
+        }
+
+        const isOpen = Math.abs(translateX.value) > 10;
+        if (isOpen) {
+          if (Math.abs(dx) > 8) {
+            stateManager.activate();
+          }
+          return;
+        }
+
+        const isLeftEdge = touchStartX.value < SCREEN_WIDTH * edgeThreshold;
+        const isRightEdge = touchStartX.value > SCREEN_WIDTH * (1 - edgeThreshold);
+
+        if (Math.abs(dx) > 15) {
+          if (isLeftEdge || isRightEdge) {
+            stateManager.activate();
+          } else {
+            stateManager.fail();
+          }
+        }
+      })
       .onStart(() => {
         startX.value = translateX.value;
       })

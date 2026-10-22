@@ -14,6 +14,7 @@ import { SwipeableRow } from '../../../shared/ui/swipeable-row';
 import { PinChatAction } from '../../../features/pin-chat';
 import { ArchiveChatAction } from '../../../features/archive-chat';
 import { DeleteChatAction } from '../../../features/delete-chat';
+import { MarkReadChatAction } from '../../../features/mark-read-chat';
 import { theme } from '../../../shared/config/theme';
 
 const AnimatedFlatList = Animated.createAnimatedComponent(FlatList as new () => FlatList<IChat>);
@@ -43,6 +44,12 @@ export const ChatList: React.FC<ChatListProps> = ({
         >
           <SwipeableRow
             rightActionsWidth={216}
+            leftActionsWidth={76}
+            renderLeftActions={(close) => (
+              <View style={styles.actionsRow}>
+                <MarkReadChatAction chat={item} onClose={close} />
+              </View>
+            )}
             renderRightActions={(close) => (
               <View style={styles.actionsRow}>
                 <PinChatAction chat={item} onClose={close} />

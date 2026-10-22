@@ -1,5 +1,5 @@
 import React from 'react';
-import { StyleSheet, Text, Pressable, StyleProp, ViewStyle } from 'react-native';
+import { StyleSheet, Text, Pressable, Alert, StyleProp, ViewStyle } from 'react-native';
 import { Trash2 } from 'lucide-react-native';
 import { IChat, useChatStore } from '../../../entities/chat';
 import { theme } from '../../../shared/config/theme';
@@ -18,10 +18,31 @@ export const DeleteChatAction: React.FC<DeleteChatActionProps> = ({
   const deleteChat = useChatStore((state) => state.deleteChat);
 
   const handlePress = () => {
-    deleteChat(chat.id);
-    if (onClose) {
-      onClose();
-    }
+    Alert.alert(
+      'Delete Chat',
+      `Are you sure you want to delete the chat with "${chat.title}"?`,
+      [
+        {
+          text: 'Cancel',
+          style: 'cancel',
+          onPress: () => {
+            if (onClose) {
+              onClose();
+            }
+          },
+        },
+        {
+          text: 'Delete',
+          style: 'destructive',
+          onPress: () => {
+            deleteChat(chat.id);
+            if (onClose) {
+              onClose();
+            }
+          },
+        },
+      ]
+    );
   };
 
   return (

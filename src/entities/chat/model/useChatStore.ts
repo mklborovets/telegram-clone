@@ -11,6 +11,7 @@ interface ChatState {
   deleteChat: (id: string) => void;
   updateLastMessage: (id: string, text: string, time?: string, isMe?: boolean) => void;
   markAsRead: (id: string) => void;
+  toggleRead: (id: string) => void;
   createFolder: (title: string, chatIds?: string[]) => string;
   deleteFolder: (folderId: string) => void;
   updateFolder: (folderId: string, title: string, chatIds?: string[]) => void;
@@ -143,6 +144,22 @@ export const useChatStore = create<ChatState>((set) => ({
           return {
             ...chat,
             unreadCount: 0,
+          };
+        }
+        return chat;
+      }),
+    }));
+  },
+
+  toggleRead: (id: string) => {
+    set((state) => ({
+      chats: state.chats.map((chat) => {
+        if (chat.id === id) {
+          const wasUnread = chat.unreadCount > 0;
+          return {
+            ...chat,
+            unreadCount: wasUnread ? 0 : 1,
+            lastMessageRead: wasUnread,
           };
         }
         return chat;
