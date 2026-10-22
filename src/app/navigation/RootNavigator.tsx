@@ -131,8 +131,16 @@ export const RootNavigator: React.FC = () => {
   ]);
 
   const handleOpenSavedMessages = useCallback(() => {
-    const savedChat = chats.find((c) => c.id === 'chat-saved');
+    const savedChat = chats.find(
+      (c) =>
+        c.id === 'chat-1' ||
+        c.id === 'chat-saved' ||
+        c.title.toLowerCase().includes('saved')
+    );
     if (savedChat) {
+      setIsDrawerOpen(false);
+      setIsMyProfileOpen(false);
+      setIsChatProfileOpen(false);
       handleOpenChat(savedChat);
     }
   }, [chats, handleOpenChat]);
@@ -228,6 +236,10 @@ export const RootNavigator: React.FC = () => {
           <ChatProfilePage
             chatId={activeChatId}
             onBack={() => setIsChatProfileOpen(false)}
+            onOpenChat={(chat) => {
+              setIsChatProfileOpen(false);
+              handleOpenChat(chat);
+            }}
           />
         ) : null}
       </Modal>

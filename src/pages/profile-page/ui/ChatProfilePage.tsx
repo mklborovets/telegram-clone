@@ -16,9 +16,6 @@ import {
   Bell,
   Search,
   MoreVertical,
-  Share2,
-  Trash2,
-  Users,
 } from 'lucide-react-native';
 import { IChat, useChatStore } from '../../../entities/chat';
 import { useMessageStore } from '../../../entities/message';
@@ -36,6 +33,7 @@ import {
 export interface ChatProfilePageProps {
   chatId: string;
   onBack: () => void;
+  onOpenChat?: (chat: IChat) => void;
 }
 
 const mockGroupMembers: ProfileMemberItem[] = [
@@ -69,69 +67,13 @@ const mockGroupMembers: ProfileMemberItem[] = [
   },
 ];
 
-const fallbackPhotos: ProfileMediaItem[] = [
-  {
-    id: 'fb-p-1',
-    uri: 'https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?w=800&q=80',
-  },
-  {
-    id: 'fb-p-2',
-    uri: 'https://images.unsplash.com/photo-1579783900882-c0d3dad7b119?w=800&q=80',
-  },
-  {
-    id: 'fb-p-3',
-    uri: 'https://images.unsplash.com/photo-1550745165-9bc0b252726f?w=800&q=80',
-  },
-  {
-    id: 'fb-p-4',
-    uri: 'https://images.unsplash.com/photo-1518770660439-4636190af475?w=800&q=80',
-  },
-];
-
-const fallbackFiles: ProfileFileItem[] = [
-  {
-    id: 'fb-f-1',
-    name: 'Architecture_Spec_2026.pdf',
-    size: '2.4 MB',
-    date: 'Oct 22, 2026',
-  },
-  {
-    id: 'fb-f-2',
-    name: 'Design_System_Spec.pdf',
-    size: '1.8 MB',
-    date: 'Oct 21, 2026',
-  },
-  {
-    id: 'fb-f-3',
-    name: 'API_Documentation_v2.json',
-    size: '420 KB',
-    date: 'Oct 19, 2026',
-  },
-];
-
-const fallbackLinks: ProfileLinkItem[] = [
-  {
-    id: 'fb-l-1',
-    title: 'React Native Official Documentation',
-    url: 'https://reactnative.dev',
-  },
-  {
-    id: 'fb-l-2',
-    title: 'Software Mansion Reanimated 4',
-    url: 'https://docs.swmansion.com/react-native-reanimated',
-  },
-  {
-    id: 'fb-l-3',
-    title: 'React 19 Hooks and Architecture',
-    url: 'https://react.dev/reference/react',
-  },
-];
-
 export const ChatProfilePage: React.FC<ChatProfilePageProps> = ({
   chatId,
   onBack,
+  onOpenChat,
 }) => {
-  const chat = useChatStore((state) => state.chats.find((c) => c.id === chatId));
+  const allChats = useChatStore((state) => state.chats);
+  const chat = allChats.find((c) => c.id === chatId);
   const messages = useMessageStore((state) => state.messages[chatId] || []);
 
   const [notificationsEnabled, setNotificationsEnabled] = useState(true);
@@ -145,9 +87,6 @@ export const ChatProfilePage: React.FC<ChatProfilePageProps> = ({
         list.push({ id: m.id, uri: m.mediaUri });
       }
     });
-    if (list.length === 0) {
-      return fallbackPhotos;
-    }
     return list;
   }, [messages]);
 
@@ -155,19 +94,116 @@ export const ChatProfilePage: React.FC<ChatProfilePageProps> = ({
     const list: ProfileFileItem[] = [];
     messages.forEach((m) => {
       if (m.mediaType === 'file' && m.fileName) {
+        const dateObj = new Date(m.createdAt);
+        const formattedDate = isNaN(dateObj.getTime())
+          ? 'Recently'
+          : dateObj.toLocaleDateString(undefined, {
+              month: 'short',
+              day: 'numeric',
+            });
         list.push({
           id: m.id,
           name: m.fileName,
           size: m.fileSize || '1.5 MB',
-          date: 'Recently',
+          date: formattedDate,
         });
       }
     });
-    if (list.length === 0) {
-      return fallbackFiles;
-    }
     return list;
   }, [messages]);
+
+  const chatLinks = useMemo<ProfileLinkItem[]>(() => {
+    const list: ProfileLinkItem[] = [];
+    const urlRegex = /(https?:\/\/[^\s]+)/g;
+    messages.forEach((m) => {
+      if (m.text) {
+        const matches = m.text.match(urlRegex);
+        if (matches) {
+          matches.forEach((url, i) => {
+            const cleanDomain = url
+              .replace(/^https?:\/\/(www\.)?/, '')
+              .split('/')[0];
+            list.push({
+              id: `${m.id}-link-${i}`,
+              title: cleanDomain || 'Web Link',
+              url,
+            });
+          });
+        }
+      }
+    });
+    return list;
+  }, [messages]);
+
+  const details = useMemo(() => {
+    if (!chat) {
+      return {
+        phone: '',
+        username: '',
+        description: '',
+        inviteLink: '',
+      };
+    }
+
+    if (!chat.isPersonal) {
+      return {
+        phone: '',
+        username: chat.title.toLowerCase().replace(/[^a-z0-9]/g, '_'),
+        description:
+          chat.id === 'chat-3'
+            ? 'Official workspace for mobile architecture, release schedules and native UI components.'
+            : 'Official product updates and release changelogs.',
+        inviteLink: `https://t.me/${chat.title.toLowerCase().replace(/[^a-z0-9]/g, '_')}`,
+      };
+    }
+
+    if (chat.id === 'chat-1' || chat.title.toLowerCase().includes('saved')) {
+      return {
+        phone: '',
+        username: '',
+        description:
+          'Forward messages here to save them. Send media and files to store them in your personal cloud storage.',
+        inviteLink: '',
+      };
+    }
+
+    if (chat.title.includes('Sarah')) {
+      return {
+        phone: '+1 (555) 234-5678',
+        username: 'sarah_jenkins',
+        description:
+          'Senior Product Designer. Passionate about design systems and micro-interactions.',
+        inviteLink: '',
+      };
+    }
+
+    if (chat.title.includes('Elena')) {
+      return {
+        phone: '+380 50 987 65 43',
+        username: 'elena_rostova',
+        description:
+          'Frontend engineer & open source enthusiast. Exploring React 19 architecture.',
+        inviteLink: '',
+      };
+    }
+
+    if (chat.title.includes('Michael')) {
+      return {
+        phone: '+1 (415) 890-1234',
+        username: 'michael_chen',
+        description:
+          'Backend & Infrastructure Engineer @ TechCorp. Distributed systems & GraphQL.',
+        inviteLink: '',
+      };
+    }
+
+    return {
+      phone: '+380 95 123 45 67',
+      username: chat.title.toLowerCase().replace(/[^a-z0-9]/g, '_'),
+      description: 'Telegram contact.',
+      inviteLink: '',
+    };
+  }, [chat]);
 
   if (!chat) {
     return null;
@@ -175,6 +211,22 @@ export const ChatProfilePage: React.FC<ChatProfilePageProps> = ({
 
   const handleAction = (label: string) => {
     Alert.alert(label, `${label} action triggered for ${chat.title}`);
+  };
+
+  const handleSelectMember = (member: ProfileMemberItem) => {
+    const memberChat = allChats.find(
+      (c) =>
+        c.title.toLowerCase().includes(member.name.toLowerCase()) ||
+        member.name.toLowerCase().includes(c.title.toLowerCase())
+    );
+    if (memberChat && onOpenChat) {
+      onBack();
+      setTimeout(() => {
+        onOpenChat(memberChat);
+      }, 100);
+    } else {
+      Alert.alert(member.name, `@${member.username}\nRole: ${member.role}`);
+    }
   };
 
   return (
@@ -263,46 +315,48 @@ export const ChatProfilePage: React.FC<ChatProfilePageProps> = ({
         <View style={styles.card}>
           <Text style={styles.cardHeader}>INFO</Text>
 
-          {!isGroup ? (
+          {details.phone ? (
             <>
               <View style={styles.infoRow}>
-                <Text style={styles.infoValue}>+1 (555) 234-5678</Text>
+                <Text style={styles.infoValue}>{details.phone}</Text>
                 <Text style={styles.infoLabel}>Mobile</Text>
               </View>
               <View style={styles.divider} />
+            </>
+          ) : null}
+
+          {details.username ? (
+            <>
               <View style={styles.infoRow}>
-                <Text style={styles.infoValue}>
-                  @{chat.title.toLowerCase().replace(/\s+/g, '_')}
-                </Text>
+                <Text style={styles.infoValue}>@{details.username}</Text>
                 <Text style={styles.infoLabel}>Username</Text>
               </View>
               <View style={styles.divider} />
-              <View style={styles.infoRow}>
-                <Text style={styles.infoValue}>
-                  Mobile Engineer & Open Source Developer. Focused on React Native 60 FPS interactions.
-                </Text>
-                <Text style={styles.infoLabel}>Bio</Text>
-              </View>
             </>
-          ) : (
+          ) : null}
+
+          {details.description ? (
             <>
               <View style={styles.infoRow}>
-                <Text style={styles.infoValue}>
-                  Official workspace for mobile architecture, release schedules and native UI components.
+                <Text style={styles.infoValue}>{details.description}</Text>
+                <Text style={styles.infoLabel}>
+                  {isGroup ? 'Description' : 'Bio'}
                 </Text>
-                <Text style={styles.infoLabel}>Description</Text>
               </View>
               <View style={styles.divider} />
+            </>
+          ) : null}
+
+          {details.inviteLink ? (
+            <>
               <View style={styles.infoRow}>
-                <Text style={styles.infoValue}>
-                  https://t.me/{chat.title.toLowerCase().replace(/\s+/g, '_')}
-                </Text>
+                <Text style={styles.infoValue}>{details.inviteLink}</Text>
                 <Text style={styles.infoLabel}>Invite Link</Text>
               </View>
+              <View style={styles.divider} />
             </>
-          )}
+          ) : null}
 
-          <View style={styles.divider} />
           <View style={styles.switchRow}>
             <Text style={styles.switchLabel}>Notifications</Text>
             <Switch
@@ -317,9 +371,10 @@ export const ChatProfilePage: React.FC<ChatProfilePageProps> = ({
         <MediaTabs
           photos={chatPhotos}
           files={chatFiles}
-          links={fallbackLinks}
+          links={chatLinks}
           members={isGroup ? mockGroupMembers : undefined}
           isGroup={isGroup}
+          onSelectMember={handleSelectMember}
         />
       </ScrollView>
     </SafeAreaView>

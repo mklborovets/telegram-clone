@@ -15,6 +15,7 @@ import {
   ExternalLink,
   ShieldCheck,
   UserCheck,
+  ChevronRight,
 } from 'lucide-react-native';
 import { Avatar } from '../../../shared/ui/avatar';
 import { theme } from '../../../shared/config/theme';
@@ -52,6 +53,7 @@ export interface MediaTabsProps {
   links: ProfileLinkItem[];
   members?: ProfileMemberItem[];
   isGroup?: boolean;
+  onSelectMember?: (member: ProfileMemberItem) => void;
 }
 
 type TabType = 'media' | 'files' | 'links' | 'members';
@@ -62,6 +64,7 @@ export const MediaTabs: React.FC<MediaTabsProps> = ({
   links,
   members = [],
   isGroup = false,
+  onSelectMember,
 }) => {
   const { width } = useWindowDimensions();
   const photoSize = (width - 6) / 3;
@@ -211,7 +214,14 @@ export const MediaTabs: React.FC<MediaTabsProps> = ({
         {activeTab === 'members' ? (
           <View style={styles.membersList}>
             {members.map((member) => (
-              <View key={member.id} style={styles.memberRow}>
+              <Pressable
+                key={member.id}
+                style={({ pressed }) => [
+                  styles.memberRow,
+                  pressed && styles.memberRowPressed,
+                ]}
+                onPress={() => onSelectMember && onSelectMember(member)}
+              >
                 <Avatar
                   name={member.name}
                   avatarUrl={member.avatarUrl}
@@ -239,7 +249,8 @@ export const MediaTabs: React.FC<MediaTabsProps> = ({
                     {member.isOnline ? 'online' : `@${member.username}`}
                   </Text>
                 </View>
-              </View>
+                <ChevronRight size={18} color={theme.colors.textMuted} />
+              </Pressable>
             ))}
           </View>
         ) : null}
@@ -398,6 +409,9 @@ const styles = StyleSheet.create({
     paddingVertical: 10,
     borderBottomWidth: StyleSheet.hairlineWidth,
     borderBottomColor: theme.colors.divider,
+  },
+  memberRowPressed: {
+    backgroundColor: '#F8FAFC',
   },
   memberInfo: {
     flex: 1,

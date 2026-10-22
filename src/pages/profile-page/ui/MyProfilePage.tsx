@@ -228,7 +228,11 @@ export const MyProfilePage: React.FC<MyProfilePageProps> = ({
                 style={styles.menuRow}
                 onPress={() => {
                   onBack();
-                  if (onOpenSavedMessages) onOpenSavedMessages();
+                  if (onOpenSavedMessages) {
+                    setTimeout(() => {
+                      onOpenSavedMessages();
+                    }, 120);
+                  }
                 }}
               >
                 <View style={styles.menuIconWrapper}>

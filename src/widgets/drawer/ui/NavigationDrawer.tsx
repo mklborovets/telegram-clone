@@ -5,7 +5,6 @@ import {
   Text,
   Pressable,
   useWindowDimensions,
-  Modal,
   Switch,
 } from 'react-native';
 import Animated, {
@@ -90,25 +89,18 @@ export const NavigationDrawer: React.FC<NavigationDrawerProps> = ({
   }
 
   return (
-    <Modal
-      visible={visible}
-      transparent
-      animationType="none"
-      onRequestClose={onClose}
-      statusBarTranslucent
-    >
-      <View style={styles.overlay}>
-        <Animated.View style={[styles.backdrop, animatedBackdropStyle]}>
-          <Pressable style={StyleSheet.absoluteFill} onPress={onClose} />
-        </Animated.View>
+    <View style={styles.overlay}>
+      <Animated.View style={[styles.backdrop, animatedBackdropStyle]}>
+        <Pressable style={StyleSheet.absoluteFill} onPress={onClose} />
+      </Animated.View>
 
-        <Animated.View
-          style={[
-            styles.drawerContent,
-            { width: drawerWidth },
-            animatedDrawerStyle,
-          ]}
-        >
+      <Animated.View
+        style={[
+          styles.drawerContent,
+          { width: drawerWidth },
+          animatedDrawerStyle,
+        ]}
+      >
           <View style={styles.header}>
             <View style={styles.headerTop}>
               <Avatar
@@ -224,7 +216,6 @@ export const NavigationDrawer: React.FC<NavigationDrawerProps> = ({
           </View>
         </Animated.View>
       </View>
-    </Modal>
   );
 };
 

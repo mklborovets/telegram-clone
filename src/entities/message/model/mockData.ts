@@ -83,6 +83,14 @@ export const initialMessages: Record<string, IMessage[]> = {
       isMe: false,
       isRead: false,
     },
+    {
+      id: 'm-2-5',
+      chatId: 'chat-2',
+      text: 'Here are the design guidelines: https://design.telegram.org',
+      createdAt: new Date(Date.now() - 1000 * 60 * 10).toISOString(),
+      isMe: false,
+      isRead: false,
+    },
   ],
   'chat-3': [
     {
@@ -120,8 +128,16 @@ export const initialMessages: Record<string, IMessage[]> = {
     {
       id: 'm-3-5',
       chatId: 'chat-3',
-      text: 'Alex: The gesture-handler release looks solid.',
+      text: 'Alex: The gesture-handler release looks solid: https://docs.swmansion.com/react-native-gesture-handler',
       createdAt: new Date(Date.now() - 1000 * 60 * 65).toISOString(),
+      isMe: false,
+      isRead: false,
+    },
+    {
+      id: 'm-3-6',
+      chatId: 'chat-3',
+      text: 'Also check the React Native architecture: https://reactnative.dev/architecture/overview',
+      createdAt: new Date(Date.now() - 1000 * 60 * 50).toISOString(),
       isMe: false,
       isRead: false,
     },
