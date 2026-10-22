@@ -67,7 +67,7 @@ export const SwipeableTabs: React.FC<SwipeableTabsProps> = ({
         animated: true,
       });
     }
-  }, [activeIndex, width, tabLayouts, translateX]);
+  }, [activeIndex, width, translateX]);
 
   const handleTabPress = (index: number) => {
     onTabChange(index);
@@ -75,10 +75,20 @@ export const SwipeableTabs: React.FC<SwipeableTabsProps> = ({
 
   const handleTabLayout = (index: number, event: LayoutChangeEvent) => {
     const { x, width: tabWidth } = event.nativeEvent.layout;
-    setTabLayouts((prev) => ({
-      ...prev,
-      [index]: { x, width: tabWidth },
-    }));
+    setTabLayouts((prev) => {
+      const existing = prev[index];
+      if (
+        existing &&
+        Math.round(existing.x) === Math.round(x) &&
+        Math.round(existing.width) === Math.round(tabWidth)
+      ) {
+        return prev;
+      }
+      return {
+        ...prev,
+        [index]: { x, width: tabWidth },
+      };
+    });
   };
 
   const panGesture = Gesture.Pan()

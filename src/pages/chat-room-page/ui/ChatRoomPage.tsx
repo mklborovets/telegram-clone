@@ -14,6 +14,8 @@ export interface ChatRoomPageProps {
   onBack: () => void;
 }
 
+const EMPTY_MESSAGES: any[] = [];
+
 export const ChatRoomPage: React.FC<ChatRoomPageProps> = ({
   chatId,
   onBack,
@@ -22,7 +24,7 @@ export const ChatRoomPage: React.FC<ChatRoomPageProps> = ({
     state.chats.find((c) => c.id === chatId)
   );
   const messages = useMessageStore(
-    (state) => state.messages[chatId] || []
+    (state) => state.messages[chatId] || EMPTY_MESSAGES
   );
 
   const keyboard = useAnimatedKeyboard({ isStatusBarTranslucentAndroid: true });

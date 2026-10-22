@@ -112,16 +112,19 @@ export const SwipeableRow = forwardRef<SwipeableRowRef, SwipeableRowProps>(
         }
       });
 
+    const tapGesture = Gesture.Tap()
+      .maxDuration(250)
+      .onEnd(() => {
+        if (Math.abs(translateX.value) > 10) {
+          closeRow();
+        }
+      });
+
+    const composedGesture = Gesture.Race(panGesture, tapGesture);
+
     const animatedContentStyle = useAnimatedStyle(() => ({
       transform: [{ translateX: translateX.value }],
     }));
-
-    const overlayAnimatedStyle = useAnimatedStyle(() => {
-      const isOpen = Math.abs(translateX.value) > 10;
-      return {
-        display: isOpen ? 'flex' : 'none',
-      };
-    });
 
     const animatedRightStyle = useAnimatedStyle(() => {
       const opacity = interpolate(
@@ -179,12 +182,9 @@ export const SwipeableRow = forwardRef<SwipeableRowRef, SwipeableRowProps>(
           </Animated.View>
         ) : null}
 
-        <GestureDetector gesture={panGesture}>
+        <GestureDetector gesture={composedGesture}>
           <Animated.View style={[styles.content, animatedContentStyle]}>
             {children}
-            <Animated.View style={[styles.closeOverlay, overlayAnimatedStyle]}>
-              <Pressable style={StyleSheet.absoluteFill} onPress={triggerClose} />
-            </Animated.View>
           </Animated.View>
         </GestureDetector>
       </View>
@@ -201,12 +201,6 @@ const styles = StyleSheet.create({
   },
   content: {
     backgroundColor: 'transparent',
-    position: 'relative',
-  },
-  closeOverlay: {
-    ...StyleSheet.absoluteFill,
-    backgroundColor: 'transparent',
-    zIndex: 10,
   },
   actionsContainer: {
     position: 'absolute',
