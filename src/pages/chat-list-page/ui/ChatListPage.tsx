@@ -25,11 +25,15 @@ import { theme } from '../../../shared/config/theme';
 export interface ChatListPageProps {
   onOpenChat: (chat: IChat) => void;
   onOpenArchive?: () => void;
+  onOpenDrawer?: () => void;
+  onOpenFolderManager?: () => void;
 }
 
 export const ChatListPage: React.FC<ChatListPageProps> = ({
   onOpenChat,
   onOpenArchive,
+  onOpenDrawer,
+  onOpenFolderManager,
 }) => {
   const chats = useChatStore((state) => state.chats);
   const folders = useChatStore((state) => state.folders);
@@ -133,7 +137,15 @@ export const ChatListPage: React.FC<ChatListPageProps> = ({
     <View style={styles.container}>
       <View style={styles.header}>
         <View style={styles.headerLeft}>
-          <IconButton size={40} onPress={handleDismissKeyboard}>
+          <IconButton
+            size={40}
+            onPress={() => {
+              handleDismissKeyboard();
+              if (onOpenDrawer) {
+                onOpenDrawer();
+              }
+            }}
+          >
             <Menu size={24} color={theme.colors.text} />
           </IconButton>
           <Text style={styles.headerTitle}>Telegram</Text>
@@ -144,7 +156,11 @@ export const ChatListPage: React.FC<ChatListPageProps> = ({
             size={40}
             onPress={() => {
               handleDismissKeyboard();
-              setIsFolderModalVisible(true);
+              if (onOpenFolderManager) {
+                onOpenFolderManager();
+              } else {
+                setIsFolderModalVisible(true);
+              }
             }}
           >
             <FolderPlus size={22} color={theme.colors.text} />

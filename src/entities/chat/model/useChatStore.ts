@@ -21,6 +21,7 @@ interface ChatState {
   updateFolder: (folderId: string, title: string, chatIds?: string[]) => void;
   addChatToFolder: (folderId: string, chatId: string) => void;
   removeChatFromFolder: (folderId: string, chatId: string) => void;
+  reorderFolders: (folders: IChatFolder[]) => void;
   setActiveFolderId: (folderId: string) => void;
 }
 
@@ -283,6 +284,10 @@ export const useChatStore = create<ChatState>()(
             return chat;
           }),
         }));
+      },
+
+      reorderFolders: (newFolders: IChatFolder[]) => {
+        set({ folders: newFolders });
       },
 
       setActiveFolderId: (folderId: string) => {

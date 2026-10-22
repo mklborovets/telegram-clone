@@ -1,9 +1,10 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useCallback, useEffect } from 'react';
 import {
   StyleSheet,
   View,
   useWindowDimensions,
   BackHandler,
+  Modal,
 } from 'react-native';
 import Animated, {
   useSharedValue,
@@ -14,6 +15,8 @@ import Animated, {
 import { ChatListPage } from '../../pages/chat-list-page';
 import { ChatRoomPage } from '../../pages/chat-room-page';
 import { ArchivePage } from '../../pages/archive-page';
+import { FolderManagerPage } from '../../pages/folder-manager-page';
+import { NavigationDrawer } from '../../widgets/drawer';
 import { IChat, useChatStore } from '../../entities/chat';
 import { useMessageStore } from '../../entities/message';
 
@@ -21,6 +24,10 @@ export const RootNavigator: React.FC = () => {
   const { width } = useWindowDimensions();
   const [activeChatId, setActiveChatId] = useState<string | null>(null);
   const [isArchiveOpen, setIsArchiveOpen] = useState(false);
+  const [isDrawerOpen, setIsDrawerOpen] = useState(false);
+  const [isFolderManagerOpen, setIsFolderManagerOpen] = useState(false);
+
+  const chats = useChatStore((state) => state.chats);
   const markAsRead = useChatStore((state) => state.markAsRead);
   const markMessagesAsRead = useMessageStore((state) => state.markAsRead);
 
@@ -77,6 +84,14 @@ export const RootNavigator: React.FC = () => {
 
   useEffect(() => {
     const onBackPress = () => {
+      if (isFolderManagerOpen) {
+        setIsFolderManagerOpen(false);
+        return true;
+      }
+      if (isDrawerOpen) {
+        setIsDrawerOpen(false);
+        return true;
+      }
       if (activeChatId) {
         handleBack();
         return true;
@@ -93,7 +108,21 @@ export const RootNavigator: React.FC = () => {
       onBackPress
     );
     return () => subscription.remove();
-  }, [activeChatId, isArchiveOpen, handleBack, handleBackFromArchive]);
+  }, [
+    isFolderManagerOpen,
+    isDrawerOpen,
+    activeChatId,
+    isArchiveOpen,
+    handleBack,
+    handleBackFromArchive,
+  ]);
+
+  const handleOpenSavedMessages = useCallback(() => {
+    const savedChat = chats.find((c) => c.id === 'chat-saved');
+    if (savedChat) {
+      handleOpenChat(savedChat);
+    }
+  }, [chats, handleOpenChat]);
 
   const animatedStyle = useAnimatedStyle(() => ({
     transform: [{ translateX: translateX.value }],
@@ -112,6 +141,8 @@ export const RootNavigator: React.FC = () => {
           <ChatListPage
             onOpenChat={handleOpenChat}
             onOpenArchive={handleOpenArchive}
+            onOpenDrawer={() => setIsDrawerOpen(true)}
+            onOpenFolderManager={() => setIsFolderManagerOpen(true)}
           />
         </View>
 
@@ -136,6 +167,22 @@ export const RootNavigator: React.FC = () => {
           )}
         </View>
       </Animated.View>
+
+      <NavigationDrawer
+        isOpen={isDrawerOpen}
+        onClose={() => setIsDrawerOpen(false)}
+        onOpenFolderManager={() => setIsFolderManagerOpen(true)}
+        onOpenSavedMessages={handleOpenSavedMessages}
+      />
+
+      <Modal
+        visible={isFolderManagerOpen}
+        animationType="slide"
+        presentationStyle="pageSheet"
+        onRequestClose={() => setIsFolderManagerOpen(false)}
+      >
+        <FolderManagerPage onBack={() => setIsFolderManagerOpen(false)} />
+      </Modal>
     </View>
   );
 };
