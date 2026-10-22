@@ -99,13 +99,19 @@ export const SendMessageBar: React.FC<SendMessageBarProps> = ({
     setShowAttachMenu(false);
     const media = await pickImageFromGallery();
     if (media && media.uri) {
+      const caption = text.trim();
       addMessage(
         chatId,
-        media.fileName || 'Photo',
+        caption,
         true,
         'photo',
-        media.uri
+        media.uri,
+        media.fileName,
+        media.fileSize
       );
+      if (caption) {
+        setText('');
+      }
     }
   };
 

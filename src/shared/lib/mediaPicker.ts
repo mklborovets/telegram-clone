@@ -71,6 +71,8 @@ export const pickDocumentFile = async (): Promise<PickedMedia | null> => {
       if (DocumentPicker && typeof DocumentPicker.pick === 'function') {
         const result = await DocumentPicker.pick({
           type: [DocumentPicker.types.allFiles],
+          mode: 'import',
+          copyTo: 'cachesDirectory',
         });
         const file = Array.isArray(result) ? result[0] : result;
         if (file && file.uri) {

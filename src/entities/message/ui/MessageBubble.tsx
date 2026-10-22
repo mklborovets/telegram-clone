@@ -27,6 +27,9 @@ export const MessageBubble: React.FC<MessageBubbleProps> = ({
 }) => {
   const isMe = message.isMe;
 
+  const isPhoto = message.mediaType === 'photo' && Boolean(message.mediaUri);
+  const isPhotoOnly = isPhoto && !message.text;
+
   return (
     <Animated.View
       entering={FadeInDown.duration(200)}
@@ -46,96 +49,132 @@ export const MessageBubble: React.FC<MessageBubbleProps> = ({
         style={({ pressed }) => [
           styles.bubble,
           isMe ? styles.bubbleOut : styles.bubbleIn,
+          isPhotoOnly && styles.bubblePhotoOnly,
           pressed && styles.bubblePressed,
         ]}
       >
-        {message.mediaType === 'photo' && message.mediaUri ? (
-          <View style={styles.imageContainer}>
+        {isPhotoOnly ? (
+          <View style={styles.photoContainerOnly}>
             <Image
               source={{ uri: message.mediaUri }}
               style={styles.image}
               resizeMode="cover"
             />
-          </View>
-        ) : null}
-
-        {message.mediaType === 'file' ? (
-          <View style={styles.fileContainer}>
-            <View style={styles.fileIconWrapper}>
-              <FileText size={20} color={theme.colors.white} />
-            </View>
-            <View style={styles.fileDetails}>
-              <Text
-                style={[
-                  styles.fileName,
-                  isMe ? styles.textOut : styles.textIn,
-                ]}
-                numberOfLines={1}
-              >
-                {message.fileName || 'Attachment'}
+            <View style={styles.photoMetaOverlay}>
+              {message.isEdited ? (
+                <Text style={styles.photoMetaText}>edited</Text>
+              ) : null}
+              <Text style={styles.photoMetaText}>
+                {formatMessageTime(message.createdAt)}
               </Text>
-              {message.fileSize ? (
-                <Text
-                  style={[
-                    styles.fileSize,
-                    isMe ? styles.timeOut : styles.timeIn,
-                  ]}
-                >
-                  {message.fileSize}
-                </Text>
+              {isMe ? (
+                message.isRead ? (
+                  <CheckCheck
+                    size={14}
+                    color="#FFFFFF"
+                    style={styles.checkIcon}
+                  />
+                ) : (
+                  <Check
+                    size={14}
+                    color="rgba(255,255,255,0.7)"
+                    style={styles.checkIcon}
+                  />
+                )
               ) : null}
             </View>
           </View>
-        ) : null}
+        ) : (
+          <>
+            {isPhoto ? (
+              <View style={styles.imageContainer}>
+                <Image
+                  source={{ uri: message.mediaUri }}
+                  style={styles.image}
+                  resizeMode="cover"
+                />
+              </View>
+            ) : null}
 
-        {message.text ? (
-          <Text
-            style={[
-              styles.text,
-              isMe ? styles.textOut : styles.textIn,
-            ]}
-          >
-            {message.text}
-          </Text>
-        ) : null}
+            {message.mediaType === 'file' ? (
+              <View style={styles.fileContainer}>
+                <View style={styles.fileIconWrapper}>
+                  <FileText size={20} color={theme.colors.white} />
+                </View>
+                <View style={styles.fileDetails}>
+                  <Text
+                    style={[
+                      styles.fileName,
+                      isMe ? styles.textOut : styles.textIn,
+                    ]}
+                    numberOfLines={1}
+                  >
+                    {message.fileName || 'Attachment'}
+                  </Text>
+                  {message.fileSize ? (
+                    <Text
+                      style={[
+                        styles.fileSize,
+                        isMe ? styles.timeOut : styles.timeIn,
+                      ]}
+                    >
+                      {message.fileSize}
+                    </Text>
+                  ) : null}
+                </View>
+              </View>
+            ) : null}
 
-        <View style={styles.meta}>
-          {message.isEdited ? (
-            <Text
-              style={[
-                styles.editedText,
-                isMe ? styles.timeOut : styles.timeIn,
-              ]}
-            >
-              edited
-            </Text>
-          ) : null}
+            {message.text ? (
+              <Text
+                style={[
+                  styles.text,
+                  isMe ? styles.textOut : styles.textIn,
+                ]}
+              >
+                {message.text}
+              </Text>
+            ) : null}
 
-          <Text
-            style={[
-              styles.time,
-              isMe ? styles.timeOut : styles.timeIn,
-            ]}
-          >
-            {formatMessageTime(message.createdAt)}
-          </Text>
+            <View style={styles.meta}>
+              {message.isEdited ? (
+                <Text
+                  style={[
+                    styles.editedText,
+                    isMe ? styles.timeOut : styles.timeIn,
+                  ]}
+                >
+                  edited
+                </Text>
+              ) : null}
 
-          {isMe ? (
-            message.isRead ? (
-              <CheckCheck
-                size={14}
-                color={theme.colors.primary}
-                style={styles.checkIcon}
-              />
-            ) : (
-              <Check
-                size={14}
-                color={theme.colors.textMuted}
-                style={styles.checkIcon}
-              />
-            )
-          ) : null}
-        </View>
+              <Text
+                style={[
+                  styles.time,
+                  isMe ? styles.timeOut : styles.timeIn,
+                ]}
+              >
+                {formatMessageTime(message.createdAt)}
+              </Text>
+
+              {isMe ? (
+                message.isRead ? (
+                  <CheckCheck
+                    size={14}
+                    color={theme.colors.primary}
+                    style={styles.checkIcon}
+                  />
+                ) : (
+                  <Check
+                    size={14}
+                    color={theme.colors.textMuted}
+                    style={styles.checkIcon}
+                  />
+                )
+              ) : null}
+            </View>
+          </>
+        )}
       </Pressable>
     </Animated.View>
   );
@@ -176,12 +215,44 @@ const styles = StyleSheet.create({
     backgroundColor: theme.colors.bubbleIn,
     borderBottomLeftRadius: 4,
   },
+  bubblePhotoOnly: {
+    paddingHorizontal: 3,
+    paddingTop: 3,
+    paddingBottom: 3,
+    borderRadius: 18,
+    overflow: 'hidden',
+  },
+  photoContainerOnly: {
+    width: 250,
+    height: 250,
+    borderRadius: 16,
+    overflow: 'hidden',
+    position: 'relative',
+  },
+  photoMetaOverlay: {
+    position: 'absolute',
+    bottom: 6,
+    right: 6,
+    backgroundColor: 'rgba(0, 0, 0, 0.42)',
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: 7,
+    paddingVertical: 2,
+    borderRadius: 12,
+  },
+  photoMetaText: {
+    color: '#FFFFFF',
+    fontSize: 11,
+    fontWeight: '500',
+    marginRight: 4,
+  },
   imageContainer: {
     width: 240,
     height: 180,
     borderRadius: theme.borderRadius.md,
     overflow: 'hidden',
     marginBottom: 6,
+    alignSelf: 'center',
   },
   image: {
     width: '100%',
