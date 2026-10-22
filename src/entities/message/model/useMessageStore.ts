@@ -7,6 +7,7 @@ interface MessageState {
   messages: Record<string, IMessage[]>;
   addMessage: (chatId: string, text: string, isMe?: boolean) => IMessage;
   getMessagesByChatId: (chatId: string) => IMessage[];
+  markAsRead: (chatId: string) => void;
 }
 
 export const useMessageStore = create<MessageState>((set, get) => ({
@@ -40,5 +41,22 @@ export const useMessageStore = create<MessageState>((set, get) => ({
 
   getMessagesByChatId: (chatId: string) => {
     return get().messages[chatId] || [];
+  },
+
+  markAsRead: (chatId: string) => {
+    set((state) => {
+      const chatMessages = state.messages[chatId];
+      if (!chatMessages) {
+        return state;
+      }
+      return {
+        messages: {
+          ...state.messages,
+          [chatId]: chatMessages.map((msg) =>
+            msg.isRead ? msg : { ...msg, isRead: true }
+          ),
+        },
+      };
+    });
   },
 }));

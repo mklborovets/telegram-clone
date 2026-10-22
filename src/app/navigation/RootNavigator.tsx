@@ -14,11 +14,13 @@ import Animated, {
 import { ChatListPage } from '../../pages/chat-list-page';
 import { ChatRoomPage } from '../../pages/chat-room-page';
 import { IChat, useChatStore } from '../../entities/chat';
+import { useMessageStore } from '../../entities/message';
 
 export const RootNavigator: React.FC = () => {
   const { width } = useWindowDimensions();
   const [activeChatId, setActiveChatId] = useState<string | null>(null);
   const markAsRead = useChatStore((state) => state.markAsRead);
+  const markMessagesAsRead = useMessageStore((state) => state.markAsRead);
 
   const translateX = useSharedValue(0);
 
@@ -26,18 +28,20 @@ export const RootNavigator: React.FC = () => {
     (chat: IChat) => {
       setActiveChatId(chat.id);
       markAsRead(chat.id);
+      markMessagesAsRead(chat.id);
       translateX.value = withSpring(-width, {
-        damping: 25,
-        stiffness: 220,
+        damping: 30,
+        stiffness: 260,
+        overshootClamping: true,
       });
     },
-    [width, markAsRead, translateX]
+    [width, markAsRead, markMessagesAsRead, translateX]
   );
 
   const handleBack = useCallback(() => {
     translateX.value = withSpring(
       0,
-      { damping: 25, stiffness: 220 },
+      { damping: 30, stiffness: 260, overshootClamping: true },
       (finished) => {
         if (finished) {
           runOnJS(setActiveChatId)(null);

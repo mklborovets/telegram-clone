@@ -37,7 +37,7 @@ export const ChatList: React.FC<ChatListProps> = ({
     ({ item }: { item: IChat }) => {
       return (
         <Animated.View
-          layout={LinearTransition.springify().damping(18).stiffness(200)}
+          layout={LinearTransition.springify().damping(32).stiffness(240).overshootClamping(1)}
           exiting={FadeOut.duration(200)}
           style={styles.itemWrapper}
         >

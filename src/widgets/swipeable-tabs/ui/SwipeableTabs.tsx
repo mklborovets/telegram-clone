@@ -56,8 +56,9 @@ export const SwipeableTabs: React.FC<SwipeableTabsProps> = ({
 
   useEffect(() => {
     translateX.value = withSpring(-activeIndex * width, {
-      damping: 22,
-      stiffness: 220,
+      damping: 30,
+      stiffness: 240,
+      overshootClamping: true,
     });
 
     const activeLayout = tabLayouts[activeIndex];
@@ -127,8 +128,9 @@ export const SwipeableTabs: React.FC<SwipeableTabsProps> = ({
 
       const targetX = -targetIndex * width;
       translateX.value = withSpring(targetX, {
-        damping: 22,
-        stiffness: 220,
+        damping: 30,
+        stiffness: 240,
+        overshootClamping: true,
       });
 
       if (targetIndex !== activeIndex) {

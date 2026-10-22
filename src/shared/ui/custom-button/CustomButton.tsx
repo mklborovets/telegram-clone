@@ -36,10 +36,18 @@ export const CustomButton: React.FC<CustomButtonProps> = ({
     .enabled(!disabled)
     .maxDuration(10000)
     .onBegin(() => {
-      scale.value = withSpring(0.96, { damping: 15, stiffness: 300 });
+      scale.value = withSpring(0.96, {
+        damping: 30,
+        stiffness: 300,
+        overshootClamping: true,
+      });
     })
     .onFinalize(() => {
-      scale.value = withSpring(1, { damping: 15, stiffness: 300 });
+      scale.value = withSpring(1, {
+        damping: 30,
+        stiffness: 300,
+        overshootClamping: true,
+      });
     })
     .onEnd(() => {
       if (onPress) {

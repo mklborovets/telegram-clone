@@ -31,10 +31,18 @@ export const IconButton: React.FC<IconButtonProps> = ({
     .enabled(!disabled)
     .maxDuration(10000)
     .onBegin(() => {
-      scale.value = withSpring(0.9, { damping: 15, stiffness: 350 });
+      scale.value = withSpring(0.9, {
+        damping: 30,
+        stiffness: 350,
+        overshootClamping: true,
+      });
     })
     .onFinalize(() => {
-      scale.value = withSpring(1, { damping: 15, stiffness: 350 });
+      scale.value = withSpring(1, {
+        damping: 30,
+        stiffness: 350,
+        overshootClamping: true,
+      });
     })
     .onEnd(() => {
       if (onPress) {

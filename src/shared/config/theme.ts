@@ -6,6 +6,7 @@ export const theme = {
     surface: '#F4F4F5',
     surfaceVariant: '#EFEFF3',
     card: '#FFFFFF',
+    pinnedCard: '#F4F7FB',
     text: '#000000',
     textSecondary: '#8E8E93',
     textMuted: '#A0A0A5',

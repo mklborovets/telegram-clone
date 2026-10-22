@@ -31,6 +31,7 @@ export const ChatRow: React.FC<ChatRowProps> = ({ chat, onPress, style }) => {
       onPress={handlePress}
       style={({ pressed }) => [
         styles.container,
+        chat.isPinned && styles.pinnedContainer,
         pressed && styles.pressed,
         style,
       ]}
@@ -111,6 +112,9 @@ export const ChatRow: React.FC<ChatRowProps> = ({ chat, onPress, style }) => {
 const styles = StyleSheet.create({
   container: {
     backgroundColor: theme.colors.card,
+  },
+  pinnedContainer: {
+    backgroundColor: theme.colors.pinnedCard,
   },
   pressed: {
     backgroundColor: theme.colors.surfaceVariant,

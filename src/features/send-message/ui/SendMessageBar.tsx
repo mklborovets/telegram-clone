@@ -38,10 +38,18 @@ export const SendMessageBar: React.FC<SendMessageBarProps> = ({
 
   useEffect(() => {
     if (hasText) {
-      scale.value = withSpring(1, { damping: 15, stiffness: 250 });
+      scale.value = withSpring(1, {
+        damping: 28,
+        stiffness: 260,
+        overshootClamping: true,
+      });
       opacity.value = withTiming(1, { duration: 150 });
     } else {
-      scale.value = withSpring(0, { damping: 15, stiffness: 250 });
+      scale.value = withSpring(0, {
+        damping: 28,
+        stiffness: 260,
+        overshootClamping: true,
+      });
       opacity.value = withTiming(0, { duration: 150 });
     }
   }, [hasText, scale, opacity]);

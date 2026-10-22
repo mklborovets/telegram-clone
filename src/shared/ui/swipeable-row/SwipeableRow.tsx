@@ -46,7 +46,11 @@ export const SwipeableRow = forwardRef<SwipeableRowRef, SwipeableRowProps>(
 
     const closeRow = () => {
       'worklet';
-      translateX.value = withSpring(0, { damping: 20, stiffness: 200 }, (finished) => {
+      translateX.value = withSpring(0, {
+        damping: 30,
+        stiffness: 240,
+        overshootClamping: true,
+      }, (finished) => {
         if (finished && onClose) {
           runOnJS(onClose)();
         }
@@ -82,27 +86,32 @@ export const SwipeableRow = forwardRef<SwipeableRowRef, SwipeableRowProps>(
       .onEnd((event) => {
         const maxRight = renderLeftActions ? leftActionsWidth : 0;
         const maxLeft = renderRightActions ? -rightActionsWidth : 0;
+        const springConfig = {
+          damping: 30,
+          stiffness: 240,
+          overshootClamping: true,
+        };
 
         if (event.velocityX < -500 && renderRightActions) {
-          translateX.value = withSpring(maxLeft, { damping: 20, stiffness: 200 }, (finished) => {
+          translateX.value = withSpring(maxLeft, springConfig, (finished) => {
             if (finished && onOpen) {
               runOnJS(onOpen)();
             }
           });
         } else if (event.velocityX > 500 && renderLeftActions) {
-          translateX.value = withSpring(maxRight, { damping: 20, stiffness: 200 }, (finished) => {
+          translateX.value = withSpring(maxRight, springConfig, (finished) => {
             if (finished && onOpen) {
               runOnJS(onOpen)();
             }
           });
         } else if (translateX.value < maxLeft / 2 && renderRightActions) {
-          translateX.value = withSpring(maxLeft, { damping: 20, stiffness: 200 }, (finished) => {
+          translateX.value = withSpring(maxLeft, springConfig, (finished) => {
             if (finished && onOpen) {
               runOnJS(onOpen)();
             }
           });
         } else if (translateX.value > maxRight / 2 && renderLeftActions) {
-          translateX.value = withSpring(maxRight, { damping: 20, stiffness: 200 }, (finished) => {
+          translateX.value = withSpring(maxRight, springConfig, (finished) => {
             if (finished && onOpen) {
               runOnJS(onOpen)();
             }
