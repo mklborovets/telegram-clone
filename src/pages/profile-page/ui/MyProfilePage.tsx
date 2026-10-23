@@ -20,6 +20,7 @@ import {
   Shield,
   HelpCircle,
   ChevronRight,
+  LogOut,
 } from 'lucide-react-native';
 import { useUserStore } from '../../../entities/user';
 import { Avatar } from '../../../shared/ui/avatar';
@@ -40,6 +41,7 @@ export const MyProfilePage: React.FC<MyProfilePageProps> = ({
   const profile = useUserStore((state) => state.profile);
   const updateProfile = useUserStore((state) => state.updateProfile);
   const setAvatarUrl = useUserStore((state) => state.setAvatarUrl);
+  const logout = useUserStore((state) => state.logout);
 
   const [isEditing, setIsEditing] = useState(false);
   const [name, setName] = useState(profile.name);
@@ -71,6 +73,24 @@ export const MyProfilePage: React.FC<MyProfilePageProps> = ({
 
     setIsEditing(false);
     Alert.alert('Success', 'Profile updated successfully!');
+  };
+
+  const handleLogout = () => {
+    Alert.alert(
+      'Log Out',
+      'Are you sure you want to log out of Telegram?',
+      [
+        { text: 'Cancel', style: 'cancel' },
+        {
+          text: 'Log Out',
+          style: 'destructive',
+          onPress: () => {
+            onBack();
+            logout();
+          },
+        },
+      ]
+    );
   };
 
   const handleChangePhoto = async () => {
@@ -276,6 +296,11 @@ export const MyProfilePage: React.FC<MyProfilePageProps> = ({
                 variant="secondary"
                 style={{ width: '100%' }}
               />
+
+              <Pressable style={styles.logoutButton} onPress={handleLogout}>
+                <LogOut size={18} color="#EF4444" style={{ marginRight: 8 }} />
+                <Text style={styles.logoutText}>Log Out</Text>
+              </Pressable>
             </View>
           </>
         )}
@@ -463,5 +488,20 @@ const styles = StyleSheet.create({
   editButtonWrapper: {
     paddingHorizontal: 16,
     marginTop: 20,
+  },
+  logoutButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingVertical: 14,
+    marginTop: 12,
+    backgroundColor: 'rgba(239, 68, 68, 0.08)',
+    borderRadius: 10,
+  },
+  logoutText: {
+    ...theme.typography.body,
+    fontSize: 16,
+    fontWeight: '600',
+    color: '#EF4444',
   },
 });

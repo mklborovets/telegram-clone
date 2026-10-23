@@ -16,10 +16,12 @@ import { ChatRoomPage } from '../../pages/chat-room-page';
 import { ArchivePage } from '../../pages/archive-page';
 import { FolderManagerPage } from '../../pages/folder-manager-page';
 import { ChatProfilePage, MyProfilePage } from '../../pages/profile-page';
+import { AuthPage } from '../../pages/auth-page';
 import { NavigationDrawer } from '../../widgets/drawer';
 import { SlideScreen } from '../../shared/ui/slide-screen';
 import { IChat, useChatStore } from '../../entities/chat';
 import { useMessageStore } from '../../entities/message';
+import { useUserStore } from '../../entities/user';
 
 export const RootNavigator: React.FC = () => {
   const { width } = useWindowDimensions();
@@ -33,8 +35,21 @@ export const RootNavigator: React.FC = () => {
   const chats = useChatStore((state) => state.chats);
   const markAsRead = useChatStore((state) => state.markAsRead);
   const markMessagesAsRead = useMessageStore((state) => state.markAsRead);
+  const isAuthenticated = useUserStore((state) => state.isAuthenticated);
 
   const translateX = useSharedValue(0);
+
+  useEffect(() => {
+    if (!isAuthenticated) {
+      setActiveChatId(null);
+      setIsArchiveOpen(false);
+      setIsDrawerOpen(false);
+      setIsFolderManagerOpen(false);
+      setIsMyProfileOpen(false);
+      setIsChatProfileOpen(false);
+      translateX.value = 0;
+    }
+  }, [isAuthenticated, translateX]);
 
   const handleOpenChat = useCallback(
     (chat: IChat) => {
@@ -148,6 +163,10 @@ export const RootNavigator: React.FC = () => {
   const animatedStyle = useAnimatedStyle(() => ({
     transform: [{ translateX: translateX.value }],
   }));
+
+  if (!isAuthenticated) {
+    return <AuthPage />;
+  }
 
   return (
     <View style={styles.container}>

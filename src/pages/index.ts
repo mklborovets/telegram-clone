@@ -3,3 +3,4 @@ export * from './chat-room-page';
 export * from './archive-page';
 export * from './folder-manager-page';
 export * from './profile-page';
+export * from './auth-page';

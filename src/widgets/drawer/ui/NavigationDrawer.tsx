@@ -6,6 +6,7 @@ import {
   Pressable,
   useWindowDimensions,
   Switch,
+  Alert,
 } from 'react-native';
 import Animated, {
   useSharedValue,
@@ -50,9 +51,28 @@ export const NavigationDrawer: React.FC<NavigationDrawerProps> = ({
   const drawerWidth = Math.min(width * 0.82, 320);
 
   const profile = useUserStore((state) => state.profile);
+  const logout = useUserStore((state) => state.logout);
 
   const [visible, setVisible] = useState(isOpen);
   const [isDarkMode, setIsDarkMode] = useState(false);
+
+  const handleLogout = () => {
+    Alert.alert(
+      'Log Out',
+      'Are you sure you want to log out of Telegram?',
+      [
+        { text: 'Cancel', style: 'cancel' },
+        {
+          text: 'Log Out',
+          style: 'destructive',
+          onPress: () => {
+            onClose();
+            logout();
+          },
+        },
+      ]
+    );
+  };
 
   const translateX = useSharedValue(-drawerWidth);
   const backdropOpacity = useSharedValue(0);
@@ -207,6 +227,15 @@ export const NavigationDrawer: React.FC<NavigationDrawerProps> = ({
                 <HelpCircle size={22} color={theme.colors.textSecondary} />
               </View>
               <Text style={styles.menuItemTitle}>Telegram Features</Text>
+            </Pressable>
+
+            <View style={styles.divider} />
+
+            <Pressable style={styles.menuItem} onPress={handleLogout}>
+              <View style={styles.menuItemIcon}>
+                <LogOut size={22} color="#EF4444" />
+              </View>
+              <Text style={[styles.menuItemTitle, { color: '#EF4444' }]}>Log Out</Text>
             </Pressable>
           </View>
 
