@@ -41,6 +41,17 @@ export interface SendMessageBarProps {
   style?: StyleProp<ViewStyle>;
 }
 
+const calculateInputHeight = (contentH?: number, currentText: string = ''): number => {
+  if (!currentText || currentText.length === 0) {
+    return MIN_INPUT_HEIGHT;
+  }
+  const lines = currentText.split('\n').length;
+  const linesHeight = MIN_INPUT_HEIGHT + (lines - 1) * LINE_HEIGHT;
+  const measuredHeight = contentH !== undefined ? contentH : MIN_INPUT_HEIGHT;
+  const raw = Math.max(measuredHeight, linesHeight);
+  return Math.max(MIN_INPUT_HEIGHT, Math.min(MAX_INPUT_HEIGHT, Math.round(raw)));
+};
+
 export const SendMessageBar: React.FC<SendMessageBarProps> = ({
   chatId,
   editingMessage,
@@ -61,22 +72,11 @@ export const SendMessageBar: React.FC<SendMessageBarProps> = ({
 
   const hasText = text.trim().length > 0;
 
-  const computeHeight = (contentH?: number, currentText: string = text) => {
-    if (!currentText || currentText.length === 0) {
-      return MIN_INPUT_HEIGHT;
-    }
-    const lines = currentText.split('\n').length;
-    const linesHeight = MIN_INPUT_HEIGHT + (lines - 1) * LINE_HEIGHT;
-    const measuredHeight = contentH !== undefined ? contentH : MIN_INPUT_HEIGHT;
-    const raw = Math.max(measuredHeight, linesHeight);
-    return Math.max(MIN_INPUT_HEIGHT, Math.min(MAX_INPUT_HEIGHT, Math.round(raw)));
-  };
-
   useEffect(() => {
     if (editingMessage) {
       setText(editingMessage.text);
       rawContentHeight.current = MIN_INPUT_HEIGHT;
-      setInputHeight(computeHeight(undefined, editingMessage.text));
+      setInputHeight(calculateInputHeight(undefined, editingMessage.text));
     }
   }, [editingMessage]);
 
@@ -100,7 +100,7 @@ export const SendMessageBar: React.FC<SendMessageBarProps> = ({
 
   const handleTextChange = (val: string) => {
     setText(val);
-    const newH = computeHeight(rawContentHeight.current, val);
+    const newH = calculateInputHeight(rawContentHeight.current, val);
     setInputHeight(newH);
   };
 
@@ -110,7 +110,7 @@ export const SendMessageBar: React.FC<SendMessageBarProps> = ({
     const h = e.nativeEvent.contentSize.height;
     if (h > 0) {
       rawContentHeight.current = h;
-      const newH = computeHeight(h, text);
+      const newH = calculateInputHeight(h, text);
       setInputHeight(newH);
     }
   };
@@ -213,13 +213,13 @@ export const SendMessageBar: React.FC<SendMessageBarProps> = ({
       {showAttachMenu ? (
         <View style={styles.attachMenu}>
           <Pressable onPress={handleSendPhoto} style={styles.attachOption}>
-            <View style={[styles.attachIconBg, { backgroundColor: '#34C759' }]}>
+            <View style={[styles.attachIconBg, styles.attachPhotoBg]}>
               <ImageIcon size={18} color={theme.colors.white} />
             </View>
             <Text style={styles.attachOptionText}>Photo</Text>
           </Pressable>
           <Pressable onPress={handleSendFile} style={styles.attachOption}>
-            <View style={[styles.attachIconBg, { backgroundColor: '#007AFF' }]}>
+            <View style={[styles.attachIconBg, styles.attachFileBg]}>
               <FileText size={18} color={theme.colors.white} />
             </View>
             <Text style={styles.attachOptionText}>File</Text>
@@ -338,6 +338,12 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     marginBottom: 4,
+  },
+  attachPhotoBg: {
+    backgroundColor: '#34C759',
+  },
+  attachFileBg: {
+    backgroundColor: '#007AFF',
   },
   attachOptionText: {
     ...theme.typography.caption,

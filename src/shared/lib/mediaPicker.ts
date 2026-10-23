@@ -1,4 +1,3 @@
-import { TurboModuleRegistry } from 'react-native';
 
 export interface PickedMedia {
   uri: string;
@@ -19,30 +18,29 @@ const formatFileSize = (bytes?: number): string => {
 
 export const pickImageFromGallery = async (): Promise<PickedMedia | null> => {
   try {
-    const isAvailable = Boolean(TurboModuleRegistry.get('ImagePicker'));
-    if (isAvailable) {
-      const ImagePicker = require('react-native-image-picker');
-      const launch = ImagePicker.launchImageLibrary || (ImagePicker.default && ImagePicker.default.launchImageLibrary);
-      if (typeof launch === 'function') {
-        const result = await launch({
-          mediaType: 'photo',
-          quality: 0.8,
-          selectionLimit: 1,
-        });
+    const ImagePicker = require('react-native-image-picker');
+    const launch =
+      ImagePicker.launchImageLibrary ||
+      (ImagePicker.default && ImagePicker.default.launchImageLibrary);
+    if (typeof launch === 'function') {
+      const result = await launch({
+        mediaType: 'photo',
+        quality: 0.8,
+        selectionLimit: 1,
+      });
 
-        if (result.didCancel || result.errorCode) {
-          return null;
-        }
+      if (result.didCancel || result.errorCode) {
+        return null;
+      }
 
-        const asset = result.assets && result.assets[0];
-        if (asset && asset.uri) {
-          return {
-            uri: asset.uri,
-            fileName: asset.fileName || 'photo.jpg',
-            fileSize: formatFileSize(asset.fileSize),
-            type: 'photo',
-          };
-        }
+      const asset = result.assets && result.assets[0];
+      if (asset && asset.uri) {
+        return {
+          uri: asset.uri,
+          fileName: asset.fileName || 'photo.jpg',
+          fileSize: formatFileSize(asset.fileSize),
+          type: 'photo',
+        };
       }
     }
   } catch {
@@ -64,7 +62,7 @@ export const pickImageFromGallery = async (): Promise<PickedMedia | null> => {
 
 export const pickDocumentFile = async (): Promise<PickedMedia | null> => {
   try {
-    const { pick, types, isErrorWithCode, errorCodes } = require('@react-native-documents/picker');
+    const { pick, types } = require('@react-native-documents/picker');
     const result = await pick({
       type: [types.allFiles],
     });

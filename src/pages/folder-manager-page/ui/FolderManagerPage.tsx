@@ -5,7 +5,6 @@ import {
   Text,
   ScrollView,
   Pressable,
-  Alert,
 } from 'react-native';
 import {
   ArrowLeft,

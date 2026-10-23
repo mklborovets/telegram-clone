@@ -91,12 +91,14 @@ export const CountryPickerModal: React.FC<CountryPickerModalProps> = ({
               </Pressable>
             );
           }}
-          ItemSeparatorComponent={() => <View style={styles.separator} />}
+          ItemSeparatorComponent={ItemSeparator}
         />
       </SafeAreaView>
     </Modal>
   );
 };
+
+const ItemSeparator: React.FC = () => <View style={styles.separator} />;
 
 const styles = StyleSheet.create({
   container: {

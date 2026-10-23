@@ -7,10 +7,9 @@ import {
   Pressable,
   FlatList,
 } from 'react-native';
-import { Check, X, Folder, Search } from 'lucide-react-native';
+import { Check, Folder, Search } from 'lucide-react-native';
 import { IChat, IChatFolder } from '../../../entities/chat';
 import { Avatar } from '../../../shared/ui/avatar';
-import { CustomButton } from '../../../shared/ui/custom-button';
 import { SlideScreen } from '../../../shared/ui/slide-screen';
 import { theme } from '../../../shared/config/theme';
 

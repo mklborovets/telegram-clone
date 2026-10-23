@@ -1,8 +1,12 @@
-export const cleanPhoneDigits = (input: string): string => {
+export const cleanPhoneDigits = (input?: string | null): string => {
+  if (!input || typeof input !== 'string') return '';
   return input.replace(/\D/g, '');
 };
 
-export const formatPhoneByPattern = (digits: string, pattern: string): string => {
+export const formatPhoneByPattern = (digits?: string | null, pattern?: string | null): string => {
+  if (!digits || typeof digits !== 'string') return '';
+  if (!pattern || typeof pattern !== 'string') return digits;
+
   let result = '';
   let digitIndex = 0;
 
@@ -45,12 +49,14 @@ export const getExpectedPhoneLength = (countryCode: string): { min: number; max:
   }
 };
 
-export const isPhoneValid = (digits: string, countryCode: string): boolean => {
-  const { min, max } = getExpectedPhoneLength(countryCode);
-  return digits.length >= min && digits.length <= max;
+export const isPhoneValid = (digits?: string | null, countryCode?: string): boolean => {
+  const cleanDigits = cleanPhoneDigits(digits);
+  const { min, max } = getExpectedPhoneLength(countryCode || '');
+  return cleanDigits.length >= min && cleanDigits.length <= max;
 };
 
-export const isValidInternationalPhone = (fullPhone: string): boolean => {
+export const isValidInternationalPhone = (fullPhone?: string | null): boolean => {
+  if (!fullPhone || typeof fullPhone !== 'string') return false;
   const digitsOnly = fullPhone.replace(/\D/g, '');
   if (!fullPhone.trim().startsWith('+')) {
     return false;
@@ -58,11 +64,12 @@ export const isValidInternationalPhone = (fullPhone: string): boolean => {
   return digitsOnly.length >= 8 && digitsOnly.length <= 15;
 };
 
-export const normalizePhone = (input: string): string => {
+export const normalizePhone = (input?: string | null): string => {
+  if (!input || typeof input !== 'string') return '';
   return input.replace(/[^\d+]/g, '');
 };
 
-export const isSamePhone = (phoneA: string, phoneB: string): boolean => {
+export const isSamePhone = (phoneA?: string | null, phoneB?: string | null): boolean => {
   const digitsA = cleanPhoneDigits(phoneA);
   const digitsB = cleanPhoneDigits(phoneB);
   if (!digitsA || !digitsB) return false;

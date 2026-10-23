@@ -11,13 +11,10 @@ import {
 import {
   ArrowLeft,
   Camera,
-  Check,
   Pencil,
   Bookmark,
-  Settings,
   Bell,
   Shield,
-  HelpCircle,
   ChevronRight,
   LogOut,
 } from 'lucide-react-native';

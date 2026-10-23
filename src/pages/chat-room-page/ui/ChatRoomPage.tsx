@@ -60,6 +60,23 @@ export const ChatRoomPage: React.FC<ChatRoomPageProps> = ({
     paddingBottom: keyboard.height.value,
   }));
 
+  const toastTimerRef = React.useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  React.useEffect(() => {
+    return () => {
+      if (toastTimerRef.current) {
+        clearTimeout(toastTimerRef.current);
+      }
+    };
+  }, []);
+
+  React.useEffect(() => {
+    if (chatId) {
+      useChatStore.getState().markAsRead(chatId);
+      useMessageStore.getState().markAsRead(chatId);
+    }
+  }, [chatId, messages.length]);
+
   if (!chat) {
     return null;
   }
@@ -73,8 +90,11 @@ export const ChatRoomPage: React.FC<ChatRoomPageProps> = ({
   };
 
   const showToast = (message: string) => {
+    if (toastTimerRef.current) {
+      clearTimeout(toastTimerRef.current);
+    }
     setUiState((prev) => ({ ...prev, toastMessage: message }));
-    setTimeout(() => {
+    toastTimerRef.current = setTimeout(() => {
       setUiState((prev) => ({ ...prev, toastMessage: null }));
     }, 2000);
   };

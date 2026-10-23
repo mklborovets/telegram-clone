@@ -142,9 +142,9 @@ export const ChatListPage: React.FC<ChatListPageProps> = ({
     }
     return accounts.filter((acc) => {
       if (acc.id === currentProfile.id) return false;
-      const cleanUsername = acc.username.replace(/^@/, '').toLowerCase();
+      const cleanUsername = (acc.username || '').replace(/^@/, '').toLowerCase();
       const matchUsername = cleanUsername.includes(cleanQ);
-      const matchName = acc.name.toLowerCase().includes(cleanQ);
+      const matchName = (acc.name || '').toLowerCase().includes(cleanQ);
       return matchUsername || matchName;
     });
   }, [searchQuery, accounts, currentProfile.id]);
@@ -293,7 +293,7 @@ export const ChatListPage: React.FC<ChatListPageProps> = ({
                           <Text style={styles.userResultStatus}>online</Text>
                         </View>
                         <Text style={styles.userResultTag} numberOfLines={1}>
-                          @{user.username.replace(/^@/, '')}
+                          @{(user.username || '').replace(/^@/, '')}
                           {user.bio ? `  •  ${user.bio}` : ''}
                         </Text>
                       </View>
@@ -362,7 +362,7 @@ export const ChatListPage: React.FC<ChatListPageProps> = ({
                           <Text style={styles.userResultStatus}>online</Text>
                         </View>
                         <Text style={styles.userResultTag} numberOfLines={1}>
-                          @{user.username.replace(/^@/, '')}
+                          @{(user.username || '').replace(/^@/, '')}
                           {user.bio ? `  •  ${user.bio}` : ''}
                         </Text>
                       </View>
@@ -411,7 +411,11 @@ export const ChatListPage: React.FC<ChatListPageProps> = ({
             }}
           />
 
-          <Pressable style={styles.fab}>
+          <Pressable
+            style={styles.fab}
+            onPress={() => searchInputRef.current?.focus()}
+            hitSlop={8}
+          >
             <Pencil size={24} color={theme.colors.white} />
           </Pressable>
         </>

@@ -105,7 +105,7 @@ export const useUserStore = create<UserState>()(
         return get().accounts.some(
           (acc) =>
             acc.id !== excludeUserId &&
-            acc.username.replace(/^@/, '').trim().toLowerCase() === clean
+            (acc.username || '').replace(/^@/, '').trim().toLowerCase() === clean
         );
       },
 
@@ -203,7 +203,7 @@ export const useUserStore = create<UserState>()(
       name: 'tg_user_profile',
       version: 5,
       storage: createJSONStorage(() => safeAsyncStorage),
-      migrate: (persistedState: any, version: number) => {
+      migrate: (persistedState: any, _version: number) => {
         const existingAccounts = Array.isArray(persistedState?.accounts)
           ? persistedState.accounts
           : DEMO_ACCOUNTS;

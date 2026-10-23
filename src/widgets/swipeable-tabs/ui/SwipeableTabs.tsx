@@ -60,7 +60,9 @@ export const SwipeableTabs: React.FC<SwipeableTabsProps> = ({
       stiffness: 240,
       overshootClamping: true,
     });
+  }, [activeIndex, width, translateX]);
 
+  useEffect(() => {
     const activeLayout = tabLayouts[activeIndex];
     if (activeLayout && scrollViewRef.current) {
       scrollViewRef.current.scrollTo({
@@ -68,7 +70,7 @@ export const SwipeableTabs: React.FC<SwipeableTabsProps> = ({
         animated: true,
       });
     }
-  }, [activeIndex, width, translateX]);
+  }, [activeIndex, width, tabLayouts]);
 
   const handleTabPress = (index: number) => {
     onTabChange(index);

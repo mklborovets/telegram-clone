@@ -44,7 +44,7 @@ export const SlideScreen: React.FC<SlideScreenProps> = ({
         }
       });
     }
-  }, [isOpen, width]);
+  }, [isOpen, width, backdropOpacity, translateX]);
 
   const animatedStyle = useAnimatedStyle(() => ({
     transform: [{ translateX: translateX.value }],

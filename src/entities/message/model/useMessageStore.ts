@@ -115,7 +115,7 @@ export const useMessageStore = create<MessageState>()(
           const existingMessages = state.userMessagesMap?.[userId];
           let messagesForUser: Record<string, IMessage[]>;
 
-          if (existingMessages && Object.keys(existingMessages).length > 0) {
+          if (existingMessages !== undefined) {
             messagesForUser = existingMessages;
           } else if (userId === 'user-demo-alex') {
             messagesForUser = initialMessages;
@@ -584,7 +584,7 @@ export const useMessageStore = create<MessageState>()(
       name: 'telegram-messages-storage',
       version: 3,
       storage: createJSONStorage(() => safeAsyncStorage),
-      migrate: (persistedState: any, version: number) => {
+      migrate: (persistedState: any, _version: number) => {
         const userMessagesMap = persistedState?.userMessagesMap || {
           'user-demo-alex': initialMessages,
         };

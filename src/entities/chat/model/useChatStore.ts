@@ -198,7 +198,7 @@ export const useChatStore = create<ChatState>()(
           let chatsForUser: IChat[];
           let foldersForUser: IChatFolder[];
 
-          if (existingUserChats && existingUserChats.length > 0) {
+          if (existingUserChats !== undefined) {
             chatsForUser = existingUserChats;
             foldersForUser = existingUserFolders || defaultCleanUserFolders;
           } else if (userId === 'user-demo-alex') {
@@ -320,8 +320,9 @@ export const useChatStore = create<ChatState>()(
                 lastMessage: text,
                 lastMessageTime: timestamp,
                 lastMessageSenderMe: isMe,
-                lastMessageRead: true,
+                lastMessageRead: isMe,
                 lastMessageMediaType: mediaType,
+                unreadCount: isMe ? chat.unreadCount : (chat.unreadCount || 0) + 1,
               };
             }
             return chat;
@@ -488,7 +489,7 @@ export const useChatStore = create<ChatState>()(
       name: 'telegram-chats-storage',
       version: 4,
       storage: createJSONStorage(() => safeAsyncStorage),
-      migrate: (persistedState: any, version: number) => {
+      migrate: (persistedState: any, _version: number) => {
         const userChatsMap = persistedState?.userChatsMap || {
           'user-demo-alex': initialChats,
         };

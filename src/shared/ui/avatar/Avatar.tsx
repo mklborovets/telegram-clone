@@ -30,7 +30,7 @@ const getAvatarColor = (name: string): string => {
   if (!name) return theme.colors.avatarColors[0];
   let hash = 0;
   for (let i = 0; i < name.length; i++) {
-    hash = name.charCodeAt(i) + ((hash << 5) - hash);
+    hash = (hash * 31 + name.charCodeAt(i)) % 1000000;
   }
   const index = Math.abs(hash) % theme.colors.avatarColors.length;
   return theme.colors.avatarColors[index];

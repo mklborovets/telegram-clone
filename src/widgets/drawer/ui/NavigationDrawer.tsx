@@ -6,7 +6,6 @@ import {
   Pressable,
   useWindowDimensions,
   Switch,
-  Alert,
 } from 'react-native';
 import Animated, {
   useSharedValue,
@@ -82,7 +81,7 @@ export const NavigationDrawer: React.FC<NavigationDrawerProps> = ({
         }
       });
     }
-  }, [isOpen, drawerWidth]);
+  }, [isOpen, drawerWidth, backdropOpacity, translateX]);
 
   const animatedDrawerStyle = useAnimatedStyle(() => ({
     transform: [{ translateX: translateX.value }],

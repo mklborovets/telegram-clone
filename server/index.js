@@ -70,7 +70,10 @@ wss.on('connection', (ws) => {
               (m) =>
                 m.recipientId === message.user.id ||
                 m.senderId === message.user.id ||
-                (!m.recipientId && m.message && !m.message.chatId.startsWith('direct-'))
+                (!m.recipientId &&
+                  m.message &&
+                  typeof m.message.chatId === 'string' &&
+                  !m.message.chatId.startsWith('direct-'))
             );
             if (pending.length > 0) {
               ws.send(JSON.stringify({
@@ -95,7 +98,9 @@ wss.on('connection', (ws) => {
         }
 
         case 'send_message': {
-          console.log(`[Socket] New message in chat ${message.message.chatId}: ${message.message.text || 'media'}`);
+          if (!message.message) break;
+          const chatId = message.message.chatId || 'general';
+          console.log(`[Socket] New message in chat ${chatId}: ${message.message.text || 'media'}`);
           const payload = {
             type: 'new_message',
             message: {

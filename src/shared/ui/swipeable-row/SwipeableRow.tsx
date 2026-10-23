@@ -2,7 +2,6 @@ import React, { useImperativeHandle, forwardRef } from 'react';
 import {
   StyleSheet,
   View,
-  Pressable,
   Dimensions,
   StyleProp,
   ViewStyle,

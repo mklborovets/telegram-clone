@@ -57,7 +57,7 @@ export const ConfirmModal: React.FC<ConfirmModalProps> = ({
         }
       });
     }
-  }, [visible]);
+  }, [visible, opacity, scale]);
 
   const animatedBackdropStyle = useAnimatedStyle(() => ({
     opacity: opacity.value,
