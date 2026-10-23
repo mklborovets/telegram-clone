@@ -8,7 +8,6 @@ import {
   Switch,
   Alert,
 } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
 import {
   ArrowLeft,
   Phone,
@@ -16,9 +15,11 @@ import {
   Bell,
   Search,
   MoreVertical,
+  MessageSquare,
 } from 'lucide-react-native';
 import { IChat, useChatStore } from '../../../entities/chat';
-import { useMessageStore } from '../../../entities/message';
+import { useMessageStore, IMessage } from '../../../entities/message';
+import { IUserProfile } from '../../../entities/user';
 import { Avatar } from '../../../shared/ui/avatar';
 import { IconButton } from '../../../shared/ui/icon-button';
 import { theme } from '../../../shared/config/theme';
@@ -31,7 +32,8 @@ import {
 } from './MediaTabs';
 
 export interface ChatProfilePageProps {
-  chatId: string;
+  chatId?: string;
+  userProfile?: IUserProfile | null;
   onBack: () => void;
   onOpenChat?: (chat: IChat) => void;
 }
@@ -39,8 +41,8 @@ export interface ChatProfilePageProps {
 const mockGroupMembers: ProfileMemberItem[] = [
   {
     id: 'mem-1',
-    name: 'Alex Romanov',
-    username: 'alex_rn',
+    name: 'Alexander Wright',
+    username: 'a_wright',
     role: 'owner',
     isOnline: true,
   },
@@ -67,18 +69,41 @@ const mockGroupMembers: ProfileMemberItem[] = [
   },
 ];
 
+const EMPTY_MESSAGES: IMessage[] = [];
+
 export const ChatProfilePage: React.FC<ChatProfilePageProps> = ({
   chatId,
+  userProfile,
   onBack,
   onOpenChat,
 }) => {
   const allChats = useChatStore((state) => state.chats);
-  const chat = allChats.find((c) => c.id === chatId);
-  const messages = useMessageStore((state) => state.messages[chatId] || []);
+  const getOrCreateDirectChat = useChatStore((state) => state.getOrCreateDirectChat);
+  const chat = chatId ? allChats.find((c) => c.id === chatId) : undefined;
+  const messages = useMessageStore((state) => (chatId && state.messages[chatId] ? state.messages[chatId] : EMPTY_MESSAGES));
+
+  const title = chat?.title || userProfile?.name || 'User Info';
+  const avatarUrl = chat?.avatarUrl || userProfile?.avatarUrl || '';
+  const isOnline = chat ? chat.isOnline : true;
+  const isGroup = Boolean(chat && !chat.isPersonal);
 
   const [notificationsEnabled, setNotificationsEnabled] = useState(true);
 
-  const isGroup = !chat?.isPersonal;
+  const handleSendMessage = () => {
+    let targetChat: IChat;
+    if (userProfile) {
+      targetChat = getOrCreateDirectChat(userProfile);
+    } else if (chat) {
+      targetChat = chat;
+    } else {
+      return;
+    }
+    if (onOpenChat) {
+      onOpenChat(targetChat);
+    } else {
+      onBack();
+    }
+  };
 
   const chatPhotos = useMemo<ProfileMediaItem[]>(() => {
     const list: ProfileMediaItem[] = [];
@@ -136,6 +161,15 @@ export const ChatProfilePage: React.FC<ChatProfilePageProps> = ({
   }, [messages]);
 
   const details = useMemo(() => {
+    if (userProfile) {
+      return {
+        phone: userProfile.phone || '',
+        username: userProfile.username ? userProfile.username.replace(/^@/, '') : '',
+        description: userProfile.bio || 'Telegram contact.',
+        inviteLink: '',
+      };
+    }
+
     if (!chat) {
       return {
         phone: '',
@@ -203,14 +237,14 @@ export const ChatProfilePage: React.FC<ChatProfilePageProps> = ({
       description: 'Telegram contact.',
       inviteLink: '',
     };
-  }, [chat]);
+  }, [chat, userProfile]);
 
-  if (!chat) {
+  if (!chat && !userProfile) {
     return null;
   }
 
   const handleAction = (label: string) => {
-    Alert.alert(label, `${label} action triggered for ${chat.title}`);
+    Alert.alert(label, `${label} action triggered for ${title}`);
   };
 
   const handleSelectMember = (member: ProfileMemberItem) => {
@@ -230,7 +264,7 @@ export const ChatProfilePage: React.FC<ChatProfilePageProps> = ({
   };
 
   return (
-    <SafeAreaView style={styles.container} edges={['top', 'bottom']}>
+    <View style={styles.container}>
       <View style={styles.header}>
         <IconButton size={40} onPress={onBack}>
           <ArrowLeft size={22} color={theme.colors.text} />
@@ -246,21 +280,30 @@ export const ChatProfilePage: React.FC<ChatProfilePageProps> = ({
       <ScrollView contentContainerStyle={styles.scrollContent}>
         <View style={styles.profileHero}>
           <Avatar
-            name={chat.title}
-            avatarUrl={chat.avatarUrl}
+            name={title}
+            avatarUrl={avatarUrl}
             size={96}
-            isOnline={chat.isOnline}
+            isOnline={isOnline}
           />
-          <Text style={styles.heroTitle}>{chat.title}</Text>
+          <Text style={styles.heroTitle}>{title}</Text>
           <Text style={styles.heroSubtitle}>
             {isGroup
               ? '4 members, 2 online'
-              : chat.isOnline
+              : isOnline
               ? 'online'
               : 'last seen recently'}
           </Text>
 
           <View style={styles.actionRow}>
+            <Pressable
+              style={styles.actionButton}
+              onPress={handleSendMessage}
+            >
+              <View style={styles.actionIconWrapper}>
+                <MessageSquare size={20} color={theme.colors.primary} />
+              </View>
+              <Text style={styles.actionText}>Message</Text>
+            </Pressable>
             <Pressable
               style={styles.actionButton}
               onPress={() => handleAction('Voice Call')}
@@ -377,7 +420,7 @@ export const ChatProfilePage: React.FC<ChatProfilePageProps> = ({
           onSelectMember={handleSelectMember}
         />
       </ScrollView>
-    </SafeAreaView>
+    </View>
   );
 };
 
@@ -426,7 +469,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     justifyContent: 'space-around',
     width: '100%',
-    paddingHorizontal: 24,
+    paddingHorizontal: 12,
     marginTop: 20,
   },
   actionButton: {

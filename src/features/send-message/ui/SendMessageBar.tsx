@@ -1,9 +1,10 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import {
   StyleSheet,
   View,
   Text,
   TextInput,
+  type TextInputInstance,
   Pressable,
   StyleProp,
   ViewStyle,
@@ -27,6 +28,11 @@ import { useMessageStore, IMessage } from '../../../entities/message';
 import { theme } from '../../../shared/config/theme';
 import { pickImageFromGallery, pickDocumentFile } from '../../../shared/lib/mediaPicker';
 
+const MIN_INPUT_HEIGHT = 24;
+const LINE_HEIGHT = 20;
+const MAX_LINES = 5;
+const MAX_INPUT_HEIGHT = MIN_INPUT_HEIGHT + (MAX_LINES - 1) * LINE_HEIGHT;
+
 export interface SendMessageBarProps {
   chatId: string;
   editingMessage?: IMessage | null;
@@ -43,7 +49,10 @@ export const SendMessageBar: React.FC<SendMessageBarProps> = ({
   style,
 }) => {
   const [text, setText] = useState('');
+  const [inputHeight, setInputHeight] = useState(MIN_INPUT_HEIGHT);
+  const rawContentHeight = useRef(MIN_INPUT_HEIGHT);
   const [showAttachMenu, setShowAttachMenu] = useState(false);
+  const inputRef = useRef<TextInputInstance>(null);
   const addMessage = useMessageStore((state) => state.addMessage);
   const editMessage = useMessageStore((state) => state.editMessage);
 
@@ -52,9 +61,22 @@ export const SendMessageBar: React.FC<SendMessageBarProps> = ({
 
   const hasText = text.trim().length > 0;
 
+  const computeHeight = (contentH?: number, currentText: string = text) => {
+    if (!currentText || currentText.length === 0) {
+      return MIN_INPUT_HEIGHT;
+    }
+    const lines = currentText.split('\n').length;
+    const linesHeight = MIN_INPUT_HEIGHT + (lines - 1) * LINE_HEIGHT;
+    const measuredHeight = contentH !== undefined ? contentH : MIN_INPUT_HEIGHT;
+    const raw = Math.max(measuredHeight, linesHeight);
+    return Math.max(MIN_INPUT_HEIGHT, Math.min(MAX_INPUT_HEIGHT, Math.round(raw)));
+  };
+
   useEffect(() => {
     if (editingMessage) {
       setText(editingMessage.text);
+      rawContentHeight.current = MIN_INPUT_HEIGHT;
+      setInputHeight(computeHeight(undefined, editingMessage.text));
     }
   }, [editingMessage]);
 
@@ -76,6 +98,23 @@ export const SendMessageBar: React.FC<SendMessageBarProps> = ({
     }
   }, [hasText, editingMessage, scale, opacity]);
 
+  const handleTextChange = (val: string) => {
+    setText(val);
+    const newH = computeHeight(rawContentHeight.current, val);
+    setInputHeight(newH);
+  };
+
+  const handleContentSizeChange = (e: {
+    nativeEvent: { contentSize: { height: number } };
+  }) => {
+    const h = e.nativeEvent.contentSize.height;
+    if (h > 0) {
+      rawContentHeight.current = h;
+      const newH = computeHeight(h, text);
+      setInputHeight(newH);
+    }
+  };
+
   const handleSend = () => {
     const trimmed = text.trim();
     if (!trimmed) return;
@@ -93,6 +132,9 @@ export const SendMessageBar: React.FC<SendMessageBarProps> = ({
       onSend(trimmed);
     }
     setText('');
+    rawContentHeight.current = MIN_INPUT_HEIGHT;
+    setInputHeight(MIN_INPUT_HEIGHT);
+    inputRef.current?.clear();
   };
 
   const handleSendPhoto = async () => {
@@ -111,6 +153,9 @@ export const SendMessageBar: React.FC<SendMessageBarProps> = ({
       );
       if (caption) {
         setText('');
+        rawContentHeight.current = MIN_INPUT_HEIGHT;
+        setInputHeight(MIN_INPUT_HEIGHT);
+        inputRef.current?.clear();
       }
     }
   };
@@ -150,6 +195,9 @@ export const SendMessageBar: React.FC<SendMessageBarProps> = ({
           <Pressable
             onPress={() => {
               setText('');
+              rawContentHeight.current = MIN_INPUT_HEIGHT;
+              setInputHeight(MIN_INPUT_HEIGHT);
+              inputRef.current?.clear();
               if (onCancelEdit) {
                 onCancelEdit();
               }
@@ -193,12 +241,22 @@ export const SendMessageBar: React.FC<SendMessageBarProps> = ({
 
         <View style={styles.inputContainer}>
           <TextInput
+            ref={inputRef}
             value={text}
-            onChangeText={setText}
+            onChangeText={handleTextChange}
             placeholder={editingMessage ? 'Edit message' : 'Message'}
             placeholderTextColor={theme.colors.textMuted}
             multiline
-            style={styles.input}
+            blurOnSubmit={false}
+            submitBehavior="newline"
+            scrollEnabled={true}
+            onContentSizeChange={handleContentSizeChange}
+            style={[
+              styles.input,
+              {
+                height: inputHeight,
+              },
+            ]}
           />
         </View>
 
@@ -304,7 +362,7 @@ const styles = StyleSheet.create({
   inputContainer: {
     flex: 1,
     minHeight: 40,
-    maxHeight: 120,
+    maxHeight: 124,
     backgroundColor: theme.colors.surfaceVariant,
     borderRadius: theme.borderRadius.xl,
     paddingHorizontal: theme.spacing.lg,
@@ -313,8 +371,9 @@ const styles = StyleSheet.create({
     marginRight: theme.spacing.sm,
   },
   input: {
-    ...theme.typography.body,
     color: theme.colors.text,
+    fontSize: 16,
+    fontWeight: '400',
     paddingTop: 0,
     paddingBottom: 0,
   },

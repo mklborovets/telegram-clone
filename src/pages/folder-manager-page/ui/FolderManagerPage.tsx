@@ -7,7 +7,6 @@ import {
   Pressable,
   Alert,
 } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
 import {
   ArrowLeft,
   Plus,
@@ -82,7 +81,7 @@ export const FolderManagerPage: React.FC<FolderManagerPageProps> = ({
   };
 
   return (
-    <SafeAreaView style={styles.container} edges={['top', 'bottom']}>
+    <View style={styles.container}>
       <View style={styles.header}>
         <IconButton size={40} onPress={onBack}>
           <ArrowLeft size={22} color={theme.colors.text} />
@@ -111,7 +110,9 @@ export const FolderManagerPage: React.FC<FolderManagerPageProps> = ({
 
         <View style={styles.foldersList}>
           {folders.map((folder, index) => {
-            const count = folder.chatIds ? folder.chatIds.length : 0;
+            const count = folder.chatIds
+              ? folder.chatIds.filter((chatId) => chats.some((c) => c.id === chatId)).length
+              : 0;
             return (
               <View key={folder.id} style={styles.folderRow}>
                 <View style={styles.folderIconWrapper}>
@@ -214,7 +215,7 @@ export const FolderManagerPage: React.FC<FolderManagerPageProps> = ({
         onClose={() => setIsModalVisible(false)}
         onSave={handleSaveModal}
       />
-    </SafeAreaView>
+    </View>
   );
 };
 

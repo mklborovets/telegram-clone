@@ -46,7 +46,7 @@ export const CountryPickerModal: React.FC<CountryPickerModalProps> = ({
       presentationStyle="pageSheet"
       onRequestClose={onClose}
     >
-      <SafeAreaView style={styles.container} edges={['top', 'bottom']}>
+      <SafeAreaView style={styles.container} edges={['bottom']}>
         <View style={styles.header}>
           <Text style={styles.title}>Choose a country</Text>
           <Pressable style={styles.closeBtn} onPress={onClose}>

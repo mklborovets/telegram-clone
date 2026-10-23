@@ -8,7 +8,6 @@ import {
   Pressable,
   Alert,
 } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
 import {
   ArrowLeft,
   Camera,
@@ -26,7 +25,9 @@ import { useUserStore } from '../../../entities/user';
 import { Avatar } from '../../../shared/ui/avatar';
 import { IconButton } from '../../../shared/ui/icon-button';
 import { CustomButton } from '../../../shared/ui/custom-button';
+import { ConfirmModal } from '../../../shared/ui/confirm-modal';
 import { pickImageFromGallery } from '../../../shared/lib/mediaPicker';
+import { isValidInternationalPhone } from '../../../shared/lib/phone';
 import { theme } from '../../../shared/config/theme';
 
 export interface MyProfilePageProps {
@@ -42,8 +43,10 @@ export const MyProfilePage: React.FC<MyProfilePageProps> = ({
   const updateProfile = useUserStore((state) => state.updateProfile);
   const setAvatarUrl = useUserStore((state) => state.setAvatarUrl);
   const logout = useUserStore((state) => state.logout);
+  const isUsernameTaken = useUserStore((state) => state.isUsernameTaken);
 
   const [isEditing, setIsEditing] = useState(false);
+  const [isLogoutModalVisible, setIsLogoutModalVisible] = useState(false);
   const [name, setName] = useState(profile.name);
   const [username, setUsername] = useState(profile.username);
   const [phone, setPhone] = useState(profile.phone);
@@ -64,10 +67,37 @@ export const MyProfilePage: React.FC<MyProfilePageProps> = ({
       return;
     }
 
+    const trimmedPhone = phone.trim();
+    if (!isValidInternationalPhone(trimmedPhone)) {
+      Alert.alert(
+        'Validation Error',
+        'Please enter a valid international phone number starting with + (e.g. +380 98 123 45 67).'
+      );
+      return;
+    }
+
+    const cleanUser = username.trim().replace(/^@/, '');
+    if (cleanUser && cleanUser.toLowerCase() !== profile.username.toLowerCase()) {
+      if (!/^[a-zA-Z0-9_]{3,32}$/.test(cleanUser)) {
+        Alert.alert(
+          'Invalid Username',
+          'Username must be between 3 and 32 characters and contain only letters, numbers, and underscores.'
+        );
+        return;
+      }
+      if (isUsernameTaken(cleanUser, profile.id)) {
+        Alert.alert(
+          'Username Taken',
+          `The username @${cleanUser} is already in use. Please choose another username.`
+        );
+        return;
+      }
+    }
+
     updateProfile({
       name: trimmedName,
-      username: username.trim().replace(/^@/, ''),
-      phone: phone.trim(),
+      username: cleanUser,
+      phone: trimmedPhone,
       bio: bio.trim(),
     });
 
@@ -76,21 +106,7 @@ export const MyProfilePage: React.FC<MyProfilePageProps> = ({
   };
 
   const handleLogout = () => {
-    Alert.alert(
-      'Log Out',
-      'Are you sure you want to log out of Telegram?',
-      [
-        { text: 'Cancel', style: 'cancel' },
-        {
-          text: 'Log Out',
-          style: 'destructive',
-          onPress: () => {
-            onBack();
-            logout();
-          },
-        },
-      ]
-    );
+    setIsLogoutModalVisible(true);
   };
 
   const handleChangePhoto = async () => {
@@ -102,7 +118,7 @@ export const MyProfilePage: React.FC<MyProfilePageProps> = ({
   };
 
   return (
-    <SafeAreaView style={styles.container} edges={['top', 'bottom']}>
+    <View style={styles.container}>
       <View style={styles.header}>
         <IconButton size={40} onPress={onBack}>
           <ArrowLeft size={22} color={theme.colors.text} />
@@ -127,7 +143,7 @@ export const MyProfilePage: React.FC<MyProfilePageProps> = ({
         <View style={styles.avatarSection}>
           <View style={styles.avatarWrapper}>
             <Avatar
-              name={profile.name}
+              name={profile.name || 'User'}
               avatarUrl={profile.avatarUrl}
               size={100}
             />
@@ -139,6 +155,11 @@ export const MyProfilePage: React.FC<MyProfilePageProps> = ({
               <Camera size={18} color={theme.colors.white} />
             </Pressable>
           </View>
+
+          {Boolean(profile.name) && (
+            <Text style={styles.profileNameText}>{profile.name}</Text>
+          )}
+          <Text style={styles.profileStatusText}>online</Text>
 
           <Pressable style={styles.changePhotoButton} onPress={handleChangePhoto}>
             <Text style={styles.changePhotoText}>Change Profile Photo</Text>
@@ -162,7 +183,10 @@ export const MyProfilePage: React.FC<MyProfilePageProps> = ({
               <Text style={styles.inputLabel}>PHONE NUMBER</Text>
               <TextInput
                 value={phone}
-                onChangeText={setPhone}
+                onChangeText={(val) => {
+                  const cleaned = val.replace(/[^\d+\s()-]/g, '');
+                  setPhone(cleaned);
+                }}
                 placeholder="+380 98 123 45 67"
                 placeholderTextColor={theme.colors.textMuted}
                 keyboardType="phone-pad"
@@ -220,21 +244,40 @@ export const MyProfilePage: React.FC<MyProfilePageProps> = ({
               <Text style={styles.cardHeader}>ACCOUNT</Text>
 
               <View style={styles.infoRow}>
-                <Text style={styles.infoValue}>{profile.phone}</Text>
+                <Text
+                  style={[
+                    styles.infoValue,
+                    !profile.phone && styles.emptyValueText,
+                  ]}
+                >
+                  {profile.phone || 'None'}
+                </Text>
                 <Text style={styles.infoLabel}>Tap to change phone number</Text>
               </View>
 
               <View style={styles.divider} />
 
               <View style={styles.infoRow}>
-                <Text style={styles.infoValue}>@{profile.username}</Text>
+                <Text
+                  style={[
+                    styles.infoValue,
+                    !profile.username && styles.emptyValueText,
+                  ]}
+                >
+                  {profile.username ? `@${profile.username}` : 'None'}
+                </Text>
                 <Text style={styles.infoLabel}>Username</Text>
               </View>
 
               <View style={styles.divider} />
 
               <View style={styles.infoRow}>
-                <Text style={styles.infoValue}>
+                <Text
+                  style={[
+                    styles.infoValue,
+                    !profile.bio && styles.emptyValueText,
+                  ]}
+                >
                   {profile.bio || 'Add a few words about yourself'}
                 </Text>
                 <Text style={styles.infoLabel}>Bio</Text>
@@ -305,7 +348,23 @@ export const MyProfilePage: React.FC<MyProfilePageProps> = ({
           </>
         )}
       </ScrollView>
-    </SafeAreaView>
+
+      <ConfirmModal
+        visible={isLogoutModalVisible}
+        title="Log Out"
+        message="Are you sure you want to log out of Telegram? You will need to verify your phone number again."
+        confirmText="Log Out"
+        cancelText="Cancel"
+        icon={<LogOut size={26} color="#EF4444" />}
+        isDestructive
+        onConfirm={() => {
+          setIsLogoutModalVisible(false);
+          onBack();
+          logout();
+        }}
+        onCancel={() => setIsLogoutModalVisible(false)}
+      />
+    </View>
   );
 };
 
@@ -453,6 +512,23 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontWeight: '500',
     color: theme.colors.text,
+  },
+  emptyValueText: {
+    color: theme.colors.textMuted,
+    fontWeight: '400',
+  },
+  profileNameText: {
+    ...theme.typography.title,
+    fontSize: 20,
+    fontWeight: '700',
+    color: theme.colors.text,
+    marginTop: 12,
+  },
+  profileStatusText: {
+    ...theme.typography.caption,
+    fontSize: 14,
+    color: theme.colors.textSecondary,
+    marginTop: 2,
   },
   infoLabel: {
     ...theme.typography.caption,

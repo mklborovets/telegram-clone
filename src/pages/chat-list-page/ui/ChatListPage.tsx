@@ -8,6 +8,7 @@ import {
   type TextInputInstance,
   Pressable,
   Keyboard,
+  ScrollView,
 } from 'react-native';
 import { Menu, Search, FolderPlus, Pencil, X } from 'lucide-react-native';
 import {
@@ -15,7 +16,10 @@ import {
   filterChatsByFolder,
   sortChats,
   IChat,
+  ChatRow,
 } from '../../../entities/chat';
+import { useUserStore, IUserProfile } from '../../../entities/user';
+import { Avatar } from '../../../shared/ui/avatar';
 import { ChatList } from '../../../widgets/chat-list';
 import { SwipeableTabs } from '../../../widgets/swipeable-tabs';
 import { IconButton } from '../../../shared/ui/icon-button';
@@ -27,6 +31,7 @@ export interface ChatListPageProps {
   onOpenArchive?: () => void;
   onOpenDrawer?: () => void;
   onOpenFolderManager?: () => void;
+  onOpenUserProfile?: (user: IUserProfile) => void;
 }
 
 export const ChatListPage: React.FC<ChatListPageProps> = ({
@@ -34,12 +39,15 @@ export const ChatListPage: React.FC<ChatListPageProps> = ({
   onOpenArchive,
   onOpenDrawer,
   onOpenFolderManager,
+  onOpenUserProfile,
 }) => {
   const chats = useChatStore((state) => state.chats);
   const folders = useChatStore((state) => state.folders);
   const activeFolderId = useChatStore((state) => state.activeFolderId);
   const setActiveFolderId = useChatStore((state) => state.setActiveFolderId);
   const createFolder = useChatStore((state) => state.createFolder);
+  const accounts = useUserStore((state) => state.accounts);
+  const currentProfile = useUserStore((state) => state.profile);
 
   const searchInputRef = useRef<TextInputInstance>(null);
   const [searchQuery, setSearchQuery] = useState('');
@@ -122,6 +130,47 @@ export const ChatListPage: React.FC<ChatListPageProps> = ({
     setNewFolderTitle('');
     setIsFolderModalVisible(false);
   };
+
+  const isSearching = searchQuery.trim().length > 0;
+
+  const globalUsers = useMemo(() => {
+    const q = searchQuery.trim().toLowerCase();
+    if (!q) return [];
+    const cleanQ = q.replace(/^@/, '');
+    if (!cleanQ) {
+      return accounts.filter((acc) => acc.id !== currentProfile.id);
+    }
+    return accounts.filter((acc) => {
+      if (acc.id === currentProfile.id) return false;
+      const cleanUsername = acc.username.replace(/^@/, '').toLowerCase();
+      const matchUsername = cleanUsername.includes(cleanQ);
+      const matchName = acc.name.toLowerCase().includes(cleanQ);
+      return matchUsername || matchName;
+    });
+  }, [searchQuery, accounts, currentProfile.id]);
+
+  const matchingChats = useMemo(() => {
+    const q = searchQuery.trim().toLowerCase();
+    if (!q) return [];
+    const cleanQ = q.replace(/^@/, '');
+    return chats.filter((c) => {
+      if (c.isArchived) return false;
+      return (
+        c.title.toLowerCase().includes(cleanQ) ||
+        c.lastMessage.toLowerCase().includes(cleanQ)
+      );
+    });
+  }, [searchQuery, chats]);
+
+  const handleSelectUser = useCallback(
+    (user: IUserProfile) => {
+      handleDismissKeyboard();
+      if (onOpenUserProfile) {
+        onOpenUserProfile(user);
+      }
+    },
+    [handleDismissKeyboard, onOpenUserProfile]
+  );
 
   const filterBySearch = useCallback((chatList: IChat[]) => {
     const q = debouncedQuery.trim().toLowerCase();
@@ -207,35 +256,166 @@ export const ChatListPage: React.FC<ChatListPageProps> = ({
         </View>
       </View>
 
-      <SwipeableTabs
-        tabs={tabs}
-        activeIndex={activeIndex}
-        onTabChange={handleTabChange}
-        renderTabContent={(tab) => {
-          const folder = folders.find((f) => f.id === tab.id);
-          const rawFolderChats = folder ? filterChatsByFolder(chats, folder) : [];
-          const folderChats = filterBySearch(rawFolderChats);
-          return (
-            <ChatList
-              chats={folderChats}
-              archivedChats={tab.id === 'all' && !searchQuery.trim() && !debouncedQuery.trim() ? archivedChats : []}
-              showArchiveCard={tab.id === 'all' && !searchQuery.trim() && !debouncedQuery.trim()}
-              onOpenArchive={handleOpenArchive}
-              onChatPress={handleOpenChat}
-              onScrollBeginDrag={handleDismissKeyboard}
-              emptyText={
-                debouncedQuery.trim()
-                  ? `No chats found for "${debouncedQuery.trim()}"`
-                  : 'No chats found'
-              }
-            />
-          );
-        }}
-      />
+      {isSearching ? (
+        <ScrollView
+          style={styles.searchResultsContainer}
+          contentContainerStyle={styles.searchResultsContent}
+          keyboardShouldPersistTaps="handled"
+          onScrollBeginDrag={handleDismissKeyboard}
+        >
+          {searchQuery.trim().startsWith('@') ? (
+            <>
+              {globalUsers.length > 0 && (
+                <>
+                  <View style={styles.searchSectionHeader}>
+                    <Text style={styles.searchSectionTitle}>GLOBAL SEARCH</Text>
+                  </View>
+                  {globalUsers.map((user) => (
+                    <Pressable
+                      key={user.id}
+                      style={({ pressed }) => [
+                        styles.userResultRow,
+                        pressed && styles.rowPressed,
+                      ]}
+                      onPress={() => handleSelectUser(user)}
+                    >
+                      <Avatar
+                        name={user.name}
+                        avatarUrl={user.avatarUrl}
+                        size={48}
+                        isOnline={true}
+                      />
+                      <View style={styles.userResultInfo}>
+                        <View style={styles.userResultTop}>
+                          <Text style={styles.userResultName} numberOfLines={1}>
+                            {user.name}
+                          </Text>
+                          <Text style={styles.userResultStatus}>online</Text>
+                        </View>
+                        <Text style={styles.userResultTag} numberOfLines={1}>
+                          @{user.username.replace(/^@/, '')}
+                          {user.bio ? `  •  ${user.bio}` : ''}
+                        </Text>
+                      </View>
+                    </Pressable>
+                  ))}
+                </>
+              )}
 
-      <Pressable style={styles.fab}>
-        <Pencil size={24} color={theme.colors.white} />
-      </Pressable>
+              {matchingChats.length > 0 && (
+                <>
+                  <View style={styles.searchSectionHeader}>
+                    <Text style={styles.searchSectionTitle}>CHATS</Text>
+                  </View>
+                  {matchingChats.map((chat) => (
+                    <ChatRow
+                      key={chat.id}
+                      chat={chat}
+                      onPress={handleOpenChat}
+                    />
+                  ))}
+                </>
+              )}
+            </>
+          ) : (
+            <>
+              {matchingChats.length > 0 && (
+                <>
+                  <View style={styles.searchSectionHeader}>
+                    <Text style={styles.searchSectionTitle}>CHATS</Text>
+                  </View>
+                  {matchingChats.map((chat) => (
+                    <ChatRow
+                      key={chat.id}
+                      chat={chat}
+                      onPress={handleOpenChat}
+                    />
+                  ))}
+                </>
+              )}
+
+              {globalUsers.length > 0 && (
+                <>
+                  <View style={styles.searchSectionHeader}>
+                    <Text style={styles.searchSectionTitle}>GLOBAL SEARCH</Text>
+                  </View>
+                  {globalUsers.map((user) => (
+                    <Pressable
+                      key={user.id}
+                      style={({ pressed }) => [
+                        styles.userResultRow,
+                        pressed && styles.rowPressed,
+                      ]}
+                      onPress={() => handleSelectUser(user)}
+                    >
+                      <Avatar
+                        name={user.name}
+                        avatarUrl={user.avatarUrl}
+                        size={48}
+                        isOnline={true}
+                      />
+                      <View style={styles.userResultInfo}>
+                        <View style={styles.userResultTop}>
+                          <Text style={styles.userResultName} numberOfLines={1}>
+                            {user.name}
+                          </Text>
+                          <Text style={styles.userResultStatus}>online</Text>
+                        </View>
+                        <Text style={styles.userResultTag} numberOfLines={1}>
+                          @{user.username.replace(/^@/, '')}
+                          {user.bio ? `  •  ${user.bio}` : ''}
+                        </Text>
+                      </View>
+                    </Pressable>
+                  ))}
+                </>
+              )}
+            </>
+          )}
+
+          {globalUsers.length === 0 && matchingChats.length === 0 && (
+            <View style={styles.searchEmptyContainer}>
+              <Search size={44} color={theme.colors.textMuted} />
+              <Text style={styles.searchEmptyTitle}>No Results Found</Text>
+              <Text style={styles.searchEmptySubtitle}>
+                No chats or users matching "{searchQuery.trim()}". Try searching with @username.
+              </Text>
+            </View>
+          )}
+        </ScrollView>
+      ) : (
+        <>
+          <SwipeableTabs
+            tabs={tabs}
+            activeIndex={activeIndex}
+            onTabChange={handleTabChange}
+            renderTabContent={(tab) => {
+              const folder = folders.find((f) => f.id === tab.id);
+              const rawFolderChats = folder ? filterChatsByFolder(chats, folder) : [];
+              const folderChats = filterBySearch(rawFolderChats);
+              return (
+                <ChatList
+                  chats={folderChats}
+                  archivedChats={tab.id === 'all' && !searchQuery.trim() && !debouncedQuery.trim() ? archivedChats : []}
+                  showArchiveCard={tab.id === 'all' && !searchQuery.trim() && !debouncedQuery.trim()}
+                  onOpenArchive={handleOpenArchive}
+                  onChatPress={handleOpenChat}
+                  onScrollBeginDrag={handleDismissKeyboard}
+                  emptyText={
+                    debouncedQuery.trim()
+                      ? `No chats found for "${debouncedQuery.trim()}"`
+                      : 'No chats found'
+                  }
+                />
+              );
+            }}
+          />
+
+          <Pressable style={styles.fab}>
+            <Pencil size={24} color={theme.colors.white} />
+          </Pressable>
+        </>
+      )}
 
       <Modal
         visible={isFolderModalVisible}
@@ -306,6 +486,7 @@ const styles = StyleSheet.create({
   headerTitle: {
     ...theme.typography.title,
     fontSize: 20,
+    lineHeight: 26,
     marginLeft: theme.spacing.sm,
     color: theme.colors.text,
   },
@@ -412,5 +593,89 @@ const styles = StyleSheet.create({
   },
   modalButton: {
     minWidth: 80,
+  },
+  searchResultsContainer: {
+    flex: 1,
+    backgroundColor: theme.colors.background,
+  },
+  searchResultsContent: {
+    paddingBottom: 40,
+  },
+  searchSectionHeader: {
+    paddingHorizontal: theme.spacing.md,
+    paddingTop: theme.spacing.md,
+    paddingBottom: theme.spacing.xs,
+    backgroundColor: theme.colors.background,
+  },
+  searchSectionTitle: {
+    ...theme.typography.caption,
+    fontSize: 12,
+    fontWeight: '700',
+    color: theme.colors.primary,
+    textTransform: 'uppercase',
+    letterSpacing: 0.5,
+  },
+  userResultRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: theme.spacing.md,
+    paddingVertical: 10,
+    backgroundColor: theme.colors.card,
+    borderBottomWidth: StyleSheet.hairlineWidth,
+    borderBottomColor: theme.colors.border,
+  },
+  rowPressed: {
+    backgroundColor: theme.colors.surfaceVariant,
+  },
+  userResultInfo: {
+    flex: 1,
+    marginLeft: 12,
+    justifyContent: 'center',
+  },
+  userResultTop: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 2,
+  },
+  userResultName: {
+    ...theme.typography.body,
+    fontSize: 16,
+    fontWeight: '600',
+    color: theme.colors.text,
+    flex: 1,
+    marginRight: 8,
+  },
+  userResultStatus: {
+    ...theme.typography.caption,
+    fontSize: 12,
+    color: theme.colors.primary,
+    fontWeight: '500',
+  },
+  userResultTag: {
+    ...theme.typography.caption,
+    fontSize: 13,
+    color: theme.colors.textSecondary,
+  },
+  searchEmptyContainer: {
+    flex: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingTop: 80,
+    paddingHorizontal: 32,
+  },
+  searchEmptyTitle: {
+    fontSize: 18,
+    fontWeight: '600',
+    color: theme.colors.text,
+    marginTop: 16,
+  },
+  searchEmptySubtitle: {
+    ...theme.typography.body,
+    fontSize: 14,
+    color: theme.colors.textSecondary,
+    textAlign: 'center',
+    marginTop: 6,
+    lineHeight: 20,
   },
 });

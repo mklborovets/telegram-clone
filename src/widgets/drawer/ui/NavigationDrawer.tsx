@@ -27,6 +27,7 @@ import {
   ChevronRight,
 } from 'lucide-react-native';
 import { Avatar } from '../../../shared/ui/avatar';
+import { ConfirmModal } from '../../../shared/ui/confirm-modal';
 import { theme } from '../../../shared/config/theme';
 import { useUserStore } from '../../../entities/user';
 
@@ -55,23 +56,10 @@ export const NavigationDrawer: React.FC<NavigationDrawerProps> = ({
 
   const [visible, setVisible] = useState(isOpen);
   const [isDarkMode, setIsDarkMode] = useState(false);
+  const [isLogoutModalVisible, setIsLogoutModalVisible] = useState(false);
 
   const handleLogout = () => {
-    Alert.alert(
-      'Log Out',
-      'Are you sure you want to log out of Telegram?',
-      [
-        { text: 'Cancel', style: 'cancel' },
-        {
-          text: 'Log Out',
-          style: 'destructive',
-          onPress: () => {
-            onClose();
-            logout();
-          },
-        },
-      ]
-    );
+    setIsLogoutModalVisible(true);
   };
 
   const translateX = useSharedValue(-drawerWidth);
@@ -139,10 +127,14 @@ export const NavigationDrawer: React.FC<NavigationDrawerProps> = ({
 
             <View style={styles.userInfo}>
               <Text style={styles.userName} numberOfLines={1}>
-                {profile.name}
+                {profile.name || 'Telegram User'}
               </Text>
-              <Text style={styles.userPhone}>{profile.phone}</Text>
-              <Text style={styles.userHandle}>@{profile.username}</Text>
+              {Boolean(profile.phone) && (
+                <Text style={styles.userPhone}>{profile.phone}</Text>
+              )}
+              {Boolean(profile.username) && (
+                <Text style={styles.userHandle}>@{profile.username}</Text>
+              )}
             </View>
           </View>
 
@@ -244,6 +236,22 @@ export const NavigationDrawer: React.FC<NavigationDrawerProps> = ({
             <Text style={styles.footerCredits}>Built with React Native & FSD</Text>
           </View>
         </Animated.View>
+
+        <ConfirmModal
+          visible={isLogoutModalVisible}
+          title="Log Out"
+          message="Are you sure you want to log out of Telegram? You will need to verify your phone number again."
+          confirmText="Log Out"
+          cancelText="Cancel"
+          icon={<LogOut size={26} color="#EF4444" />}
+          isDestructive
+          onConfirm={() => {
+            setIsLogoutModalVisible(false);
+            onClose();
+            logout();
+          }}
+          onCancel={() => setIsLogoutModalVisible(false)}
+        />
       </View>
   );
 };

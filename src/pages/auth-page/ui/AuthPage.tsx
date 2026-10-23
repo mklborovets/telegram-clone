@@ -11,7 +11,6 @@ import {
   Switch,
   Alert,
 } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
 import {
   Send,
   ArrowLeft,
@@ -31,11 +30,21 @@ import { pickImageFromGallery } from '../../../shared/lib/mediaPicker';
 import { theme } from '../../../shared/config/theme';
 import { COUNTRIES, CountryItem } from '../model/countries';
 import { CountryPickerModal } from './CountryPickerModal';
+import {
+  cleanPhoneDigits,
+  formatPhoneByPattern,
+  getExpectedPhoneLength,
+  isPhoneValid,
+} from '../../../shared/lib/phone';
 
 type AuthStep = 'welcome' | 'phone' | 'code' | 'profile';
 
 export const AuthPage: React.FC = () => {
   const login = useUserStore((state) => state.login);
+  const registerAccount = useUserStore((state) => state.registerAccount);
+  const findAccountByPhone = useUserStore((state) => state.findAccountByPhone);
+  const isUsernameTaken = useUserStore((state) => state.isUsernameTaken);
+  const loginAsDemo = useUserStore((state) => state.loginAsDemo);
 
   const [step, setStep] = useState<AuthStep>('welcome');
   const [selectedCountry, setSelectedCountry] = useState<CountryItem>(COUNTRIES[0]);
@@ -51,6 +60,9 @@ export const AuthPage: React.FC = () => {
   const [bio, setBio] = useState('');
   const [avatarUri, setAvatarUri] = useState('');
 
+  const fullPhone = `${selectedCountry.code} ${phoneNumber.trim()}`.trim();
+  const existingAccount = findAccountByPhone(fullPhone);
+
   const handlePickAvatar = async () => {
     const picked = await pickImageFromGallery();
     if (picked && picked.uri) {
@@ -58,24 +70,38 @@ export const AuthPage: React.FC = () => {
     }
   };
 
-  const handleQuickDemoSignIn = () => {
-    login({
-      id: 'user-me',
-      name: 'Alex Romanov',
-      username: 'alex_rn',
-      phone: '+380 98 123 45 67',
-      bio: 'Mobile architect & open source contributor',
-      avatarUrl: '',
-    });
+  const handlePhoneChange = (text: string) => {
+    const rawDigits = cleanPhoneDigits(text);
+    const { max } = getExpectedPhoneLength(selectedCountry.code);
+    const clamped = rawDigits.slice(0, max);
+    const formatted = formatPhoneByPattern(clamped, selectedCountry.format);
+    setPhoneNumber(formatted);
   };
 
   const handlePhoneSubmit = () => {
-    const cleanNumber = phoneNumber.replace(/\D/g, '');
-    if (cleanNumber.length < 5) {
-      Alert.alert('Invalid Number', 'Please enter a valid phone number.');
+    const digits = cleanPhoneDigits(phoneNumber);
+    if (!isPhoneValid(digits, selectedCountry.code)) {
+      const { min } = getExpectedPhoneLength(selectedCountry.code);
+      Alert.alert(
+        'Invalid Phone Number',
+        `Please enter a valid phone number for ${selectedCountry.name} (${min} digits).`
+      );
       return;
     }
     setStep('code');
+  };
+
+  const handleCodeSubmit = (codeToVerify: string) => {
+    if (codeToVerify.length < 5) {
+      Alert.alert('Verification', 'Please enter the 5-digit code.');
+      return;
+    }
+    const targetAccount = findAccountByPhone(fullPhone);
+    if (targetAccount) {
+      login(targetAccount);
+      return;
+    }
+    setStep('profile');
   };
 
   const handleCodeChange = (text: string) => {
@@ -83,7 +109,7 @@ export const AuthPage: React.FC = () => {
     setVerificationCode(clean);
     if (clean.length === 5) {
       setTimeout(() => {
-        setStep('profile');
+        handleCodeSubmit(clean);
       }, 300);
     }
   };
@@ -91,7 +117,7 @@ export const AuthPage: React.FC = () => {
   const handleFillDemoCode = () => {
     setVerificationCode('12345');
     setTimeout(() => {
-      setStep('profile');
+      handleCodeSubmit('12345');
     }, 300);
   };
 
@@ -102,25 +128,41 @@ export const AuthPage: React.FC = () => {
       return;
     }
 
+    const cleanUser = username.replace(/^@/, '').trim();
+    if (cleanUser) {
+      if (!/^[a-zA-Z0-9_]{3,32}$/.test(cleanUser)) {
+        Alert.alert(
+          'Invalid Username',
+          'Username must be between 3 and 32 characters and contain only letters, numbers, and underscores.'
+        );
+        return;
+      }
+      if (isUsernameTaken(cleanUser)) {
+        Alert.alert(
+          'Username Taken',
+          `The username @${cleanUser} is already in use. Please choose another username.`
+        );
+        return;
+      }
+    }
+
     const trimmedLast = lastName.trim();
     const fullName = trimmedLast ? `${trimmedFirst} ${trimmedLast}` : trimmedFirst;
-    const cleanUser = username.replace('@', '').trim() || trimmedFirst.toLowerCase().replace(/\s+/g, '_');
-    const fullPhone = `${selectedCountry.code} ${phoneNumber.trim()}`;
 
     const newProfile: IUserProfile = {
       id: `user-${Date.now()}`,
       name: fullName,
       username: cleanUser,
-      phone: fullPhone || '+380 98 123 45 67',
-      bio: bio.trim() || 'Hey there! I am using Telegram.',
+      phone: fullPhone,
+      bio: bio.trim(),
       avatarUrl: avatarUri,
     };
 
-    login(newProfile);
+    registerAccount(newProfile);
   };
 
   return (
-    <SafeAreaView style={styles.container} edges={['top', 'bottom']}>
+    <View style={styles.container}>
       <KeyboardAvoidingView
         style={styles.keyboardView}
         behavior={Platform.OS === 'ios' ? 'padding' : undefined}
@@ -199,10 +241,10 @@ export const AuthPage: React.FC = () => {
 
               <Pressable
                 style={styles.demoButton}
-                onPress={handleQuickDemoSignIn}
+                onPress={() => loginAsDemo('user-demo-alex')}
               >
                 <Sparkles size={16} color={theme.colors.primary} style={{ marginRight: 6 }} />
-                <Text style={styles.demoButtonText}>Quick Demo Sign In</Text>
+                <Text style={styles.demoButtonText}>Demo Account (Alex Romanov)</Text>
               </Pressable>
             </View>
           </View>
@@ -246,11 +288,12 @@ export const AuthPage: React.FC = () => {
               </View>
               <TextInput
                 style={styles.phoneNumberInput}
-                placeholder="-- --- ----"
+                placeholder={selectedCountry.format.replace(/#/g, '-')}
                 placeholderTextColor={theme.colors.textMuted}
                 keyboardType="phone-pad"
                 value={phoneNumber}
-                onChangeText={setPhoneNumber}
+                onChangeText={handlePhoneChange}
+                maxLength={selectedCountry.format.length + 2}
                 autoFocus
               />
             </View>
@@ -274,7 +317,7 @@ export const AuthPage: React.FC = () => {
               <CustomButton
                 title="Continue"
                 onPress={handlePhoneSubmit}
-                disabled={phoneNumber.replace(/\D/g, '').length < 5}
+                disabled={!isPhoneValid(cleanPhoneDigits(phoneNumber), selectedCountry.code)}
                 style={styles.stepActionButton}
               />
             </View>
@@ -296,7 +339,9 @@ export const AuthPage: React.FC = () => {
             <View style={styles.stepTitleSection}>
               <Text style={styles.stepTitle}>Verification Code</Text>
               <Text style={styles.stepSubtitle}>
-                We've sent an SMS with an activation code to your phone:
+                {existingAccount
+                  ? `Welcome back, ${existingAccount.name}!`
+                  : "We've sent an SMS with an activation code to your phone:"}
               </Text>
               <Text style={styles.highlightPhone}>
                 {selectedCountry.code} {phoneNumber}
@@ -345,11 +390,7 @@ export const AuthPage: React.FC = () => {
               <CustomButton
                 title="Next"
                 onPress={() => {
-                  if (verificationCode.length === 5) {
-                    setStep('profile');
-                  } else {
-                    Alert.alert('Verification', 'Please enter the 5-digit code.');
-                  }
+                  handleCodeSubmit(verificationCode);
                 }}
                 disabled={verificationCode.length < 5}
                 style={styles.stepActionButton}
@@ -464,10 +505,15 @@ export const AuthPage: React.FC = () => {
         onSelect={(country) => {
           setSelectedCountry(country);
           setIsCountryModalOpen(false);
+          const rawDigits = cleanPhoneDigits(phoneNumber);
+          const { max } = getExpectedPhoneLength(country.code);
+          const clamped = rawDigits.slice(0, max);
+          const formatted = formatPhoneByPattern(clamped, country.format);
+          setPhoneNumber(formatted);
         }}
         onClose={() => setIsCountryModalOpen(false)}
       />
-    </SafeAreaView>
+    </View>
   );
 };
 
@@ -496,12 +542,12 @@ const styles = StyleSheet.create({
     backgroundColor: theme.colors.primary,
     alignItems: 'center',
     justifyContent: 'center',
-    marginBottom: 20,
+    marginBottom: 24,
     shadowColor: theme.colors.primary,
-    shadowOffset: { width: 0, height: 8 },
-    shadowOpacity: 0.35,
-    shadowRadius: 16,
-    elevation: 8,
+    shadowOffset: { width: 0, height: 6 },
+    shadowOpacity: 0.25,
+    shadowRadius: 10,
+    elevation: 6,
   },
   logoPlane: {
     transform: [{ translateX: -3 }, { translateY: -2 }],
@@ -509,9 +555,11 @@ const styles = StyleSheet.create({
   appName: {
     ...theme.typography.title,
     fontSize: 28,
+    lineHeight: 36,
     fontWeight: '800',
     color: theme.colors.text,
     marginBottom: 8,
+    paddingTop: 2,
   },
   appTagline: {
     ...theme.typography.body,
@@ -606,6 +654,7 @@ const styles = StyleSheet.create({
   stepTitle: {
     ...theme.typography.title,
     fontSize: 24,
+    lineHeight: 32,
     fontWeight: '700',
     color: theme.colors.text,
     marginBottom: 8,

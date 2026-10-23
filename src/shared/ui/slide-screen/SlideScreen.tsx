@@ -36,7 +36,7 @@ export const SlideScreen: React.FC<SlideScreenProps> = ({
         overshootClamping: true,
       });
       backdropOpacity.value = withTiming(1, { duration: 250 });
-    } else if (mounted) {
+    } else {
       backdropOpacity.value = withTiming(0, { duration: 200 });
       translateX.value = withTiming(width, { duration: 240 }, (finished) => {
         if (finished) {
@@ -44,7 +44,7 @@ export const SlideScreen: React.FC<SlideScreenProps> = ({
         }
       });
     }
-  }, [isOpen, width, mounted]);
+  }, [isOpen, width]);
 
   const animatedStyle = useAnimatedStyle(() => ({
     transform: [{ translateX: translateX.value }],

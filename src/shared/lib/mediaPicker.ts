@@ -64,28 +64,26 @@ export const pickImageFromGallery = async (): Promise<PickedMedia | null> => {
 
 export const pickDocumentFile = async (): Promise<PickedMedia | null> => {
   try {
-    const isAvailable = Boolean(TurboModuleRegistry.get('RNDocumentPicker'));
-    if (isAvailable) {
-      const DocumentPickerModule = require('react-native-document-picker');
-      const DocumentPicker = DocumentPickerModule.default || DocumentPickerModule;
-      if (DocumentPicker && typeof DocumentPicker.pick === 'function') {
-        const result = await DocumentPicker.pick({
-          type: [DocumentPicker.types.allFiles],
-          mode: 'import',
-          copyTo: 'cachesDirectory',
-        });
-        const file = Array.isArray(result) ? result[0] : result;
-        if (file && file.uri) {
-          return {
-            uri: file.uri,
-            fileName: file.name || 'document.pdf',
-            fileSize: formatFileSize(file.size),
-            type: 'file',
-          };
-        }
-      }
+    const { pick, types, isErrorWithCode, errorCodes } = require('@react-native-documents/picker');
+    const result = await pick({
+      type: [types.allFiles],
+    });
+    const file = Array.isArray(result) ? result[0] : result;
+    if (file && file.uri) {
+      return {
+        uri: file.uri,
+        fileName: file.name || 'document.pdf',
+        fileSize: formatFileSize(file.size ?? undefined),
+        type: 'file',
+      };
     }
   } catch (err: any) {
+    try {
+      const { isErrorWithCode, errorCodes } = require('@react-native-documents/picker');
+      if (isErrorWithCode?.(err) && err.code === errorCodes?.OPERATION_CANCELED) {
+        return null;
+      }
+    } catch {}
     if (err && (err.code === 'DOCUMENT_PICKER_CANCELED' || err.message?.includes('cancel'))) {
       return null;
     }

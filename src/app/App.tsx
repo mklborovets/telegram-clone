@@ -3,9 +3,12 @@ import { StyleSheet, StatusBar } from 'react-native';
 import { SafeAreaProvider, SafeAreaView } from 'react-native-safe-area-context';
 import { GestureProvider } from './providers/GestureProvider';
 import { RootNavigator } from './navigation/RootNavigator';
+import { useSocketSync } from '../shared/lib/socket';
 import { theme } from '../shared/config/theme';
 
 export const App: React.FC = () => {
+  useSocketSync();
+
   return (
     <GestureProvider>
       <SafeAreaProvider>

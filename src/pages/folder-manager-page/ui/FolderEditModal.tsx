@@ -7,7 +7,6 @@ import {
   Pressable,
   FlatList,
 } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
 import { Check, X, Folder, Search } from 'lucide-react-native';
 import { IChat, IChatFolder } from '../../../entities/chat';
 import { Avatar } from '../../../shared/ui/avatar';
@@ -66,7 +65,7 @@ export const FolderEditModal: React.FC<FolderEditModalProps> = ({
 
   return (
     <SlideScreen isOpen={visible} onClose={onClose} zIndex={500}>
-      <SafeAreaView style={styles.container} edges={['top', 'bottom']}>
+      <View style={styles.container}>
         <View style={styles.header}>
           <Pressable onPress={onClose} hitSlop={8} style={styles.headerButton}>
             <Text style={styles.headerCancelText}>Cancel</Text>
@@ -168,7 +167,7 @@ export const FolderEditModal: React.FC<FolderEditModalProps> = ({
             );
           }}
         />
-      </SafeAreaView>
+      </View>
     </SlideScreen>
   );
 };
