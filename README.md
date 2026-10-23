@@ -1,97 +1,133 @@
-This is a new [**React Native**](https://reactnative.dev) project, bootstrapped using [`@react-native-community/cli`](https://github.com/react-native-community/cli).
+# ✈️ Telegram Clone — React Native
 
-# Getting Started
+A high-performance, feature-packed **Telegram Clone** built with **React Native (0.88)**, **TypeScript**, and **Feature-Sliced Design (FSD)** architecture. Features real-time multi-device chat synchronization over WebSockets, smooth gestures, and authentic Telegram aesthetics.
 
-> **Note**: Make sure you have completed the [Set Up Your Environment](https://reactnative.dev/docs/set-up-your-environment) guide before proceeding.
+---
 
-## Step 1: Start Metro
+## ✨ Features
 
-First, you will need to run **Metro**, the JavaScript build tool for React Native.
+### ⚡ Real-Time Messaging & Synchronization
+- **WebSocket Server**: Built-in lightweight real-time server (`node server/index.js`).
+- **Instant Messaging**: Cross-platform chat sync between Android, iOS, and multiple clients.
+- **Live Statuses**: Real-time typing indicators, user online/offline status, and read receipts.
+- **Message Operations**: Live edit and delete synced across all connected devices in real time.
 
-To start the Metro dev server, run the following command from the root of your React Native project:
+### 💬 Chat Experience
+- **Interactive Message Bubbles**: Seamless timestamps, status ticks (`sent`, `delivered`, `read`), and edit badges.
+- **Media & Document Support**: Image gallery picking and document picking via modern native pickers.
+- **Message Actions**: Copy text, edit message, delete, and reply with custom modals.
+- **Contextual Search**: Fast debounced search across chats and messages.
 
-```sh
-# Using npm
+### 📂 Organization & Gestures
+- **Custom Chat Folders**: Filter by *All*, *Work*, *Personal*, or create custom folders with custom badges.
+- **Swipe Actions**: Interactive swipe-to-reveal actions — **Pin**, **Mute**, **Archive**, **Delete**, and **Mark as Read**.
+- **Archive Card**: Native pull-down sticky archive drawer.
+- **Navigation Drawer**: Telegram-style drawer with profile header, folder shortcuts, and settings.
+
+### 👤 Authentication & Profiles
+- **Onboarding & Auth Flow**: Phone number entry with country picker (+380, +1, +44, etc.) and verification.
+- **Multi-Account Demo Switcher**: Instant switching between preset accounts (*Alex Romanov*, *Sarah Jenkins*, *Elena Rostova*, *Michael Chen*, *Pavel Durov*) for easy multi-device testing.
+- **Detailed Profiles**: User & group profile pages with shared media tabs (*Media*, *Files*, *Links*, *Voice*).
+
+---
+
+## 🏗️ Architecture (Feature-Sliced Design)
+
+The project strictly follows the **Feature-Sliced Design (FSD)** methodology:
+
+```text
+src/
+├── app/                  # App initialization, providers, navigation setup
+│   └── navigation/       # RootNavigator, MainNavigator
+├── pages/                # Screen views (AuthPage, ChatListPage, ChatRoomPage, ProfilePage, FolderManagerPage)
+├── widgets/              # Composite UI blocks (ChatList, ChatRoomView, NavigationDrawer, SwipeableTabs)
+├── features/             # User interactions (SendMessageBar, ChatSwipeActions)
+├── entities/             # Business logic & stores
+│   ├── chat/             # Chat store, model, types, ChatRow
+│   ├── message/          # Message store, model, types, MessageBubble
+│   └── user/             # User store, demo profiles, auth state
+└── shared/               # Reusable primitives, theme, UI kit, lib
+    ├── config/theme.ts   # Telegram color palette & design tokens
+    ├── lib/              # SocketClient, useSocketSync, phone helpers, mediaPicker, safeAsyncStorage
+    └── ui/               # CustomButton, IconButton, Avatar, SlideScreen, ConfirmModal
+```
+
+---
+
+## 🛠️ Tech Stack
+
+| Layer | Technology |
+|---|---|
+| **Framework** | [React Native 0.88](https://reactnative.dev) (New Architecture ready) |
+| **Language** | [TypeScript 6](https://www.typescriptlang.org/) |
+| **State Management** | [Zustand 5](https://github.com/pmndrs/zustand) with persistent storage |
+| **Animations & Gestures** | [React Native Reanimated 4](https://docs.swmansion.com/react-native-reanimated/) & [Gesture Handler 3](https://docs.swmansion.com/react-native-gesture-handler/) |
+| **Real-time Server** | Node.js + [Express](https://expressjs.com/) + [ws (WebSocket)](https://github.com/websockets/ws) |
+| **Icons** | [Lucide React Native](https://lucide.dev/) |
+| **Safe Area & UI** | `react-native-safe-area-context`, `react-native-svg` |
+| **Document & Media** | `@react-native-documents/picker`, `react-native-image-picker` |
+
+---
+
+## 🚀 Getting Started
+
+### 1. Prerequisites
+- Node.js >= 22.11.0
+- JDK 17 (e.g. `openjdk@17`)
+- Android Studio / Android SDK (for Android)
+- Xcode & CocoaPods (for iOS)
+
+### 2. Install Dependencies
+```bash
+npm install
+```
+
+For iOS:
+```bash
+cd ios && pod install && cd ..
+```
+
+### 3. Start the Real-Time Socket Server
+Run the local WebSocket backend server (listens on port 3000):
+```bash
+npm run server
+```
+
+> **Note**: Android emulators automatically connect via `ws://10.0.2.2:3000`, and iOS simulators via `ws://localhost:3000`.
+
+### 4. Start Metro Bundler
+In a separate terminal:
+```bash
 npm start
-
-# OR using Yarn
-yarn start
 ```
 
-## Step 2: Build and run your app
+### 5. Run the App
 
-With Metro running, open a new terminal window/pane from the root of your React Native project, and use one of the following commands to build and run your Android or iOS app:
-
-### Android
-
-```sh
-# Using npm
+#### Android
+```bash
 npm run android
-
-# OR using Yarn
-yarn android
 ```
 
-### iOS
-
-For iOS, remember to install CocoaPods dependencies (this only needs to be run on first clone or after updating native deps).
-
-The first time you create a new project, run the Ruby bundler to install CocoaPods itself:
-
-```sh
-bundle install
-```
-
-Then, and every time you update your native dependencies, run:
-
-```sh
-bundle exec pod install
-```
-
-For more information, please visit [CocoaPods Getting Started guide](https://guides.cocoapods.org/using/getting-started.html).
-
-```sh
-# Using npm
+#### iOS
+```bash
 npm run ios
-
-# OR using Yarn
-yarn ios
 ```
 
-If everything is set up correctly, you should see your new app running in the Android Emulator, iOS Simulator, or your connected device.
+---
 
-This is one way to run your app — you can also build it directly from Android Studio or Xcode.
+## 🔄 Multi-Device Real-Time Testing
 
-## Step 3: Modify your app
+You can test real-time communication between two clients simultaneously:
 
-Now that you have successfully run the app, let's make changes!
+1. Start the server: `npm run server`
+2. Launch the app on **Android Emulator**:
+   - Sign in as **Alex Romanov**
+3. Launch the app on **iOS Simulator**:
+   - Sign in as **Sarah Jenkins**
+4. Open the direct chat between Alex and Sarah.
+5. Messages, live typing indicators, edits, and deletions will synchronize instantly across both devices!
 
-Open `App.tsx` in your text editor of choice and make some changes. When you save, your app will automatically update and reflect these changes — this is powered by [Fast Refresh](https://reactnative.dev/docs/fast-refresh).
+---
 
-When you want to forcefully reload, for example to reset the state of your app, you can perform a full reload:
-
-- **Android**: Press the <kbd>R</kbd> key twice or select **"Reload"** from the **Dev Menu**, accessed via <kbd>Ctrl</kbd> + <kbd>M</kbd> (Windows/Linux) or <kbd>Cmd ⌘</kbd> + <kbd>M</kbd> (macOS).
-- **iOS**: Press <kbd>R</kbd> in iOS Simulator.
-
-## Congratulations! :tada:
-
-You've successfully run and modified your React Native App. :partying_face:
-
-### Now what?
-
-- If you want to add this new React Native code to an existing application, check out the [Integration guide](https://reactnative.dev/docs/integration-with-existing-apps).
-- If you're curious to learn more about React Native, check out the [docs](https://reactnative.dev/docs/getting-started).
-
-# Troubleshooting
-
-If you're having issues getting the above steps to work, see the [Troubleshooting](https://reactnative.dev/docs/troubleshooting) page.
-
-# Learn More
-
-To learn more about React Native, take a look at the following resources:
-
-- [React Native Website](https://reactnative.dev) - learn more about React Native.
-- [Getting Started](https://reactnative.dev/docs/environment-setup) - an **overview** of React Native and how setup your environment.
-- [Learn the Basics](https://reactnative.dev/docs/getting-started) - a **guided tour** of the React Native **basics**.
-- [Blog](https://reactnative.dev/blog) - read the latest official React Native **Blog** posts.
-- [`@facebook/react-native`](https://github.com/facebook/react-native) - the Open Source; GitHub **repository** for React Native.
+## 📄 License
+This project is open-source and available under the [MIT License](LICENSE).
