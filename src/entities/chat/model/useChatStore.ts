@@ -79,6 +79,7 @@ interface ChatState {
   removeChatFromFolder: (folderId: string, chatId: string) => void;
   reorderFolders: (folders: IChatFolder[]) => void;
   setActiveFolderId: (folderId: string) => void;
+  setUserOnline: (userId: string, isOnline: boolean) => void;
 }
 
 export const sortChats = (chats: IChat[]): IChat[] => {
@@ -494,6 +495,22 @@ export const useChatStore = create<ChatState>()(
 
       setActiveFolderId: (folderId: string) => {
         set({ activeFolderId: folderId });
+      },
+
+      setUserOnline: (userId: string, isOnline: boolean) => {
+        set((state) => {
+          const nextChats = state.chats.map((chat) => {
+            if (
+              chat.participantId === userId ||
+              chat.id === `direct-${userId}` ||
+              (chat.isPersonal && chat.id.includes(userId))
+            ) {
+              return { ...chat, isOnline };
+            }
+            return chat;
+          });
+          return syncUserState(state, { chats: nextChats });
+        });
       },
     }),
     {

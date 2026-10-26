@@ -17,6 +17,7 @@ export interface ChatHeaderProps {
   chat: IChat;
   onBack: () => void;
   onHeaderPress?: () => void;
+  typingText?: string | null;
   style?: StyleProp<ViewStyle>;
 }
 
@@ -24,6 +25,7 @@ export const ChatHeader: React.FC<ChatHeaderProps> = ({
   chat,
   onBack,
   onHeaderPress,
+  typingText,
   style,
 }) => {
   const isOnline = chat.isOnline;
@@ -52,14 +54,20 @@ export const ChatHeader: React.FC<ChatHeaderProps> = ({
           <Text style={styles.title} numberOfLines={1}>
             {chat.title}
           </Text>
-          <Text
-            style={[
-              styles.status,
-              isOnline ? styles.statusOnline : styles.statusOffline,
-            ]}
-          >
-            {isOnline ? 'online' : 'last seen recently'}
-          </Text>
+          {typingText ? (
+            <Text style={[styles.status, styles.statusTyping]}>
+              {typingText}
+            </Text>
+          ) : (
+            <Text
+              style={[
+                styles.status,
+                isOnline ? styles.statusOnline : styles.statusOffline,
+              ]}
+            >
+              {isOnline ? 'online' : 'last seen recently'}
+            </Text>
+          )}
         </View>
       </Pressable>
     </View>
@@ -112,5 +120,10 @@ const styles = StyleSheet.create({
   },
   statusOffline: {
     color: theme.colors.textMuted,
+  },
+  statusTyping: {
+    color: theme.colors.primary,
+    fontWeight: '500',
+    fontStyle: 'italic',
   },
 });

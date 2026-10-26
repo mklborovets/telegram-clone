@@ -73,6 +73,7 @@ interface MessageState {
   applyRemoteDelete: (chatId: string, messageId: string) => void;
   getMessagesByChatId: (chatId: string) => IMessage[];
   markAsRead: (chatId: string) => void;
+  applyRemoteRead: (chatId: string) => void;
   toggleRead: (chatId: string) => void;
   fetchRemoteMessages: (chatId: string) => Promise<void>;
 }
@@ -626,6 +627,24 @@ export const useMessageStore = create<MessageState>()(
         socketClient.send('read_messages', {
           chatId,
         });
+      },
+
+      applyRemoteRead: (chatId: string) => {
+        set((state) => {
+          const chatMessages = state.messages[chatId];
+          if (!chatMessages) {
+            return state;
+          }
+          const nextMessages = {
+            ...state.messages,
+            [chatId]: chatMessages.map((msg) =>
+              msg.isRead ? msg : { ...msg, isRead: true }
+            ),
+          };
+          return syncUserMessages(state, nextMessages);
+        });
+
+        useChatStore.getState().markAsRead(chatId);
       },
 
       toggleRead: (chatId: string) => {

@@ -34,6 +34,7 @@ export const ChatRoomPage: React.FC<ChatRoomPageProps> = ({
     selectedMessage,
     editingMessage,
     toastMessage,
+    typingText,
     setSelectedMessage,
     setEditingMessage,
     handleMessageLongPress,
@@ -54,7 +55,12 @@ export const ChatRoomPage: React.FC<ChatRoomPageProps> = ({
 
   return (
     <View style={styles.container}>
-      <ChatHeader chat={chat} onBack={onBack} onHeaderPress={onOpenProfile} />
+      <ChatHeader
+        chat={chat}
+        onBack={onBack}
+        onHeaderPress={onOpenProfile}
+        typingText={typingText}
+      />
       <Animated.View style={[styles.chatContent, keyboardAnimatedStyle]}>
         <MessageList
           messages={messages}

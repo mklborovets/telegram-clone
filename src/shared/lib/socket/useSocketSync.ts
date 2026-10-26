@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import { socketClient } from './socketClient';
 import { useUserStore } from '../../../entities/user';
 import { useMessageStore } from '../../../entities/message';
+import { useChatStore } from '../../../entities/chat';
 
 export const useSocketSync = () => {
   const profile = useUserStore((state) => state.profile);
@@ -75,12 +76,26 @@ export const useSocketSync = () => {
       }
     };
 
+    const handleMessagesRead = (data: any) => {
+      if (data && data.chatId) {
+        useMessageStore.getState().applyRemoteRead(data.chatId);
+      }
+    };
+
+    const handleUserStatus = (data: any) => {
+      if (data && data.userId && typeof data.isOnline === 'boolean') {
+        useChatStore.getState().setUserOnline(data.userId, data.isOnline);
+      }
+    };
+
     socketClient.on('connected', handleConnected);
     socketClient.on('disconnected', handleDisconnected);
     socketClient.on('new_message', handleNewMessage);
     socketClient.on('sync_messages', handleSyncMessages);
     socketClient.on('message_edited', handleMessageEdited);
     socketClient.on('message_deleted', handleMessageDeleted);
+    socketClient.on('messages_read', handleMessagesRead);
+    socketClient.on('user_status', handleUserStatus);
 
     if (socketClient.isConnected()) {
       handleConnected();
@@ -93,6 +108,8 @@ export const useSocketSync = () => {
       socketClient.off('sync_messages', handleSyncMessages);
       socketClient.off('message_edited', handleMessageEdited);
       socketClient.off('message_deleted', handleMessageDeleted);
+      socketClient.off('messages_read', handleMessagesRead);
+      socketClient.off('user_status', handleUserStatus);
     };
   }, [isAuthenticated, profile]);
 

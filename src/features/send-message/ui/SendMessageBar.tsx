@@ -25,6 +25,8 @@ import {
   FileText,
 } from 'lucide-react-native';
 import { useMessageStore, IMessage } from '../../../entities/message';
+import { useUserStore } from '../../../entities/user';
+import { socketClient } from '../../../shared/lib/socket/socketClient';
 import { theme } from '../../../shared/config/theme';
 import { pickImageFromGallery, pickDocumentFile } from '../../../shared/lib/mediaPicker';
 
@@ -98,10 +100,54 @@ export const SendMessageBar: React.FC<SendMessageBarProps> = ({
     }
   }, [hasText, editingMessage, scale, opacity]);
 
+  const typingTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  useEffect(() => {
+    return () => {
+      if (typingTimeoutRef.current) {
+        clearTimeout(typingTimeoutRef.current);
+      }
+    };
+  }, []);
+
   const handleTextChange = (val: string) => {
     setText(val);
     const newH = calculateInputHeight(rawContentHeight.current, val);
     setInputHeight(newH);
+
+    const profile = useUserStore.getState().profile;
+    if (val.trim().length > 0) {
+      socketClient.send('typing', {
+        chatId,
+        userId: profile.id,
+        userName: profile.name,
+        isTyping: true,
+      });
+
+      if (typingTimeoutRef.current) {
+        clearTimeout(typingTimeoutRef.current);
+      }
+      typingTimeoutRef.current = setTimeout(() => {
+        socketClient.send('typing', {
+          chatId,
+          userId: profile.id,
+          userName: profile.name,
+          isTyping: false,
+        });
+        typingTimeoutRef.current = null;
+      }, 2500);
+    } else {
+      if (typingTimeoutRef.current) {
+        clearTimeout(typingTimeoutRef.current);
+        typingTimeoutRef.current = null;
+      }
+      socketClient.send('typing', {
+        chatId,
+        userId: profile.id,
+        userName: profile.name,
+        isTyping: false,
+      });
+    }
   };
 
   const handleContentSizeChange = (e: {
@@ -118,6 +164,18 @@ export const SendMessageBar: React.FC<SendMessageBarProps> = ({
   const handleSend = () => {
     const trimmed = text.trim();
     if (!trimmed) return;
+
+    if (typingTimeoutRef.current) {
+      clearTimeout(typingTimeoutRef.current);
+      typingTimeoutRef.current = null;
+    }
+    const profile = useUserStore.getState().profile;
+    socketClient.send('typing', {
+      chatId,
+      userId: profile.id,
+      userName: profile.name,
+      isTyping: false,
+    });
 
     if (editingMessage) {
       editMessage(chatId, editingMessage.id, trimmed);
