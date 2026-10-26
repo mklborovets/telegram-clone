@@ -2,10 +2,16 @@ import { create } from 'zustand';
 import { persist, createJSONStorage } from 'zustand/middleware';
 import { safeAsyncStorage } from '../../../shared/lib/storage';
 import { socketClient } from '../../../shared/lib/socket/socketClient';
+import { apiClient } from '../../../shared/api/apiClient';
 import { useUserStore } from '../../user';
 import { IMessage } from './types';
 import { initialMessages } from './mockData';
-import { useChatStore, IChat } from '../../chat';
+import {
+  useChatStore,
+  IChat,
+  getCanonicalDirectChatId,
+  parseDirectChatPartnerId,
+} from '../../chat';
 
 export const createDefaultMessagesForUser = (userName = 'User'): Record<string, IMessage[]> => ({
   'chat-saved': [
@@ -68,6 +74,7 @@ interface MessageState {
   getMessagesByChatId: (chatId: string) => IMessage[];
   markAsRead: (chatId: string) => void;
   toggleRead: (chatId: string) => void;
+  fetchRemoteMessages: (chatId: string) => Promise<void>;
 }
 
 const syncUserMessages = (
@@ -182,26 +189,37 @@ export const useMessageStore = create<MessageState>()(
           .updateLastMessage(chatId, newMessage.text, timestamp, isMe, mediaType);
 
         const currentChat = useChatStore.getState().chats.find((c) => c.id === chatId);
-        const allAccounts = useUserStore.getState().accounts;
-        const recipient = allAccounts.find(
-          (acc) =>
-            acc.id !== currentUserId &&
-            (chatId.includes(acc.id) ||
-              (currentChat && currentChat.isPersonal && acc.name.toLowerCase() === currentChat.title.toLowerCase()))
-        );
-        const recipientId = recipient ? recipient.id : undefined;
+        let recipientId: string | null =
+          currentChat?.participantId ||
+          parseDirectChatPartnerId(chatId, currentUserId);
+
+        if (!recipientId) {
+          const allAccounts = useUserStore.getState().accounts;
+          const recipient = allAccounts.find(
+            (acc) =>
+              acc.id !== currentUserId &&
+              (chatId.includes(acc.id) ||
+                (currentChat && currentChat.isPersonal && acc.name.toLowerCase() === currentChat.title.toLowerCase()))
+          );
+          recipientId = recipient ? recipient.id : null;
+        }
+
+        const canonicalChatId = recipientId
+          ? getCanonicalDirectChatId(currentUserId, recipientId)
+          : chatId;
 
         if (recipientId) {
           const recipientChats = useChatStore.getState().userChatsMap[recipientId] || [];
           const existingRecipientChat = recipientChats.find(
             (c) =>
+              c.id === canonicalChatId ||
               c.id === `direct-${currentUserId}` ||
               c.id.includes(currentUserId) ||
               c.title.toLowerCase() === currentProfile.name.toLowerCase()
           );
           const recipientChatId = existingRecipientChat
             ? existingRecipientChat.id
-            : `direct-${currentUserId}`;
+            : canonicalChatId;
 
           const updatedRecipientChat: IChat = existingRecipientChat
             ? {
@@ -212,6 +230,7 @@ export const useMessageStore = create<MessageState>()(
                 lastMessageSenderMe: false,
                 lastMessageRead: false,
                 lastMessageMediaType: mediaType,
+                participantId: currentUserId,
               }
             : {
                 id: recipientChatId,
@@ -228,6 +247,7 @@ export const useMessageStore = create<MessageState>()(
                 lastMessageRead: false,
                 lastMessageMediaType: mediaType,
                 folderIds: ['personal'],
+                participantId: currentUserId,
               };
 
           useChatStore.setState((s) => {
@@ -266,7 +286,10 @@ export const useMessageStore = create<MessageState>()(
 
         if (isMe) {
           socketClient.send('send_message', {
-            message: newMessage,
+            message: {
+              ...newMessage,
+              chatId: canonicalChatId,
+            },
             senderId: currentUserId,
             senderName: currentProfile.name,
             senderAvatar: currentProfile.avatarUrl,
@@ -283,16 +306,21 @@ export const useMessageStore = create<MessageState>()(
           return;
         }
 
+        const canonicalChatId = payload.chatId && payload.chatId.startsWith('direct_')
+          ? payload.chatId
+          : getCanonicalDirectChatId(currentUserId, payload.senderId);
+
         const chatStore = useChatStore.getState();
         let targetChat = chatStore.chats.find(
           (c) =>
             c.id === payload.chatId ||
+            c.id === canonicalChatId ||
+            c.participantId === payload.senderId ||
             c.id === `direct-${payload.senderId}` ||
-            c.id.includes(payload.senderId) ||
             (payload.senderName && c.isPersonal && c.title.toLowerCase() === payload.senderName.toLowerCase())
         );
 
-        const targetChatId = targetChat ? targetChat.id : `direct-${payload.senderId}`;
+        const targetChatId = targetChat ? targetChat.id : canonicalChatId;
 
         if (!targetChat) {
           const newChat: IChat = {
@@ -310,6 +338,7 @@ export const useMessageStore = create<MessageState>()(
             lastMessageRead: false,
             lastMessageMediaType: payload.mediaType,
             folderIds: ['personal'],
+            participantId: payload.senderId,
           };
           useChatStore.setState((s) => {
             const nextChats = [newChat, ...s.chats.filter((c) => c.id !== targetChatId)];
@@ -323,6 +352,9 @@ export const useMessageStore = create<MessageState>()(
             };
           });
         } else {
+          if (!targetChat.participantId) {
+            targetChat.participantId = payload.senderId;
+          }
           chatStore.updateLastMessage(
             targetChat.id,
             payload.text,
@@ -358,6 +390,51 @@ export const useMessageStore = create<MessageState>()(
           return syncUserMessages(state, nextMessages);
         });
       },
+
+      fetchRemoteMessages: async (chatId: string) => {
+        try {
+          const remoteMsgs = await apiClient.getMessages(chatId);
+          if (!Array.isArray(remoteMsgs) || remoteMsgs.length === 0) return;
+
+          const currentUserId = get().currentUserId;
+          set((state) => {
+            const currentMsgs = state.messages[chatId] || [];
+            const existingIds = new Set(currentMsgs.map((m) => m.id));
+
+            const formatted: IMessage[] = [];
+            for (const rm of remoteMsgs) {
+              if (!existingIds.has(rm.id)) {
+                formatted.push({
+                  id: rm.id,
+                  chatId: rm.chatId || chatId,
+                  text: rm.text || '',
+                  createdAt: rm.time || new Date(rm.timestamp || Date.now()).toISOString(),
+                  isMe: rm.senderId === currentUserId,
+                  senderId: rm.senderId,
+                  isRead: true,
+                  mediaType: rm.mediaType || undefined,
+                  mediaUri: rm.mediaUri || undefined,
+                  fileName: rm.fileName || undefined,
+                  fileSize: rm.fileSize || undefined,
+                });
+              }
+            }
+
+            if (formatted.length === 0) return state;
+
+            const merged = [...currentMsgs, ...formatted].sort(
+              (a, b) => new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime()
+            );
+
+            const nextMessages = {
+              ...state.messages,
+              [chatId]: merged,
+            };
+            return syncUserMessages(state, nextMessages);
+          });
+        } catch {}
+      },
+
 
       receiveMessage: (message: IMessage) => {
         set((state) => {

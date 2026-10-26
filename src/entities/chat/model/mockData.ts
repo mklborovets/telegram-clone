@@ -52,6 +52,7 @@ export const initialChats: IChat[] = [
     lastMessageRead: false,
     pinnedAt: Date.now() - 1000 * 60 * 18,
     folderIds: ['personal'],
+    participantId: 'user-demo-sarah',
   },
   {
     id: 'chat-3',

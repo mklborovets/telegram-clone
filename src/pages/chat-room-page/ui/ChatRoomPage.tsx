@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React from 'react';
 import {
   StyleSheet,
   View,
@@ -11,13 +11,11 @@ import Animated, {
   useAnimatedStyle,
 } from 'react-native-reanimated';
 import { Pencil, Copy, Trash2 } from 'lucide-react-native';
-import { useChatStore } from '../../../entities/chat';
-import { useMessageStore, IMessage } from '../../../entities/message';
+import { useChatRoom } from '../model/useChatRoom';
 import { ChatHeader, MessageList } from '../../../widgets/chat-room-view';
 import { SendMessageBar } from '../../../features/send-message';
 import { CustomButton } from '../../../shared/ui/custom-button';
 import { theme } from '../../../shared/config/theme';
-import { copyToClipboard } from '../../../shared/lib/clipboard';
 
 export interface ChatRoomPageProps {
   chatId: string;
@@ -25,34 +23,24 @@ export interface ChatRoomPageProps {
   onOpenProfile?: () => void;
 }
 
-const EMPTY_MESSAGES: IMessage[] = [];
-
-interface ChatRoomUIState {
-  selectedMessage: IMessage | null;
-  editingMessage: IMessage | null;
-  toastMessage: string | null;
-}
-
 export const ChatRoomPage: React.FC<ChatRoomPageProps> = ({
   chatId,
   onBack,
   onOpenProfile,
 }) => {
-  const chat = useChatStore((state) =>
-    state.chats.find((c) => c.id === chatId)
-  );
-  const messages = useMessageStore(
-    (state) => state.messages[chatId] || EMPTY_MESSAGES
-  );
-  const deleteMessage = useMessageStore((state) => state.deleteMessage);
-
-  const [uiState, setUiState] = useState<ChatRoomUIState>({
-    selectedMessage: null,
-    editingMessage: null,
-    toastMessage: null,
-  });
-
-  const { selectedMessage, editingMessage, toastMessage } = uiState;
+  const {
+    chat,
+    messages,
+    selectedMessage,
+    editingMessage,
+    toastMessage,
+    setSelectedMessage,
+    setEditingMessage,
+    handleMessageLongPress,
+    handleStartEdit,
+    handleDelete,
+    handleCopy,
+  } = useChatRoom(chatId);
 
   const keyboard = useAnimatedKeyboard({ isStatusBarTranslucentAndroid: true });
 
@@ -60,77 +48,9 @@ export const ChatRoomPage: React.FC<ChatRoomPageProps> = ({
     paddingBottom: keyboard.height.value,
   }));
 
-  const toastTimerRef = React.useRef<ReturnType<typeof setTimeout> | null>(null);
-
-  React.useEffect(() => {
-    return () => {
-      if (toastTimerRef.current) {
-        clearTimeout(toastTimerRef.current);
-      }
-    };
-  }, []);
-
-  React.useEffect(() => {
-    if (chatId) {
-      useChatStore.getState().markAsRead(chatId);
-      useMessageStore.getState().markAsRead(chatId);
-    }
-  }, [chatId, messages.length]);
-
   if (!chat) {
     return null;
   }
-
-  const setSelectedMessage = (msg: IMessage | null) => {
-    setUiState((prev) => ({ ...prev, selectedMessage: msg }));
-  };
-
-  const setEditingMessage = (msg: IMessage | null) => {
-    setUiState((prev) => ({ ...prev, editingMessage: msg }));
-  };
-
-  const showToast = (message: string) => {
-    if (toastTimerRef.current) {
-      clearTimeout(toastTimerRef.current);
-    }
-    setUiState((prev) => ({ ...prev, toastMessage: message }));
-    toastTimerRef.current = setTimeout(() => {
-      setUiState((prev) => ({ ...prev, toastMessage: null }));
-    }, 2000);
-  };
-
-  const handleMessageLongPress = (msg: IMessage) => {
-    setSelectedMessage(msg);
-  };
-
-  const handleStartEdit = () => {
-    if (selectedMessage) {
-      const msgToEdit = selectedMessage;
-      setUiState((prev) => ({
-        ...prev,
-        selectedMessage: null,
-        editingMessage: msgToEdit,
-      }));
-    }
-  };
-
-  const handleDelete = () => {
-    if (selectedMessage) {
-      deleteMessage(chatId, selectedMessage.id);
-      setSelectedMessage(null);
-    }
-  };
-
-  const handleCopy = () => {
-    if (selectedMessage) {
-      const textToCopy = selectedMessage.text || selectedMessage.fileName || '';
-      if (textToCopy) {
-        copyToClipboard(textToCopy);
-        showToast('Text copied to clipboard');
-      }
-      setSelectedMessage(null);
-    }
-  };
 
   return (
     <View style={styles.container}>

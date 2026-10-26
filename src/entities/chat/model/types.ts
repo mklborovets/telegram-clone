@@ -14,6 +14,7 @@ export interface IChat {
   pinnedAt?: number;
   folderIds?: string[];
   lastMessageMediaType?: 'photo' | 'file';
+  participantId?: string;
 }
 
 export type ChatCategory = 'all' | 'personal' | 'archive';

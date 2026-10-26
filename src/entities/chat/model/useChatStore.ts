@@ -4,6 +4,7 @@ import { safeAsyncStorage } from '../../../shared/lib/storage';
 import { useUserStore } from '../../user';
 import { IChat, IChatFolder, ChatCategory } from './types';
 import { initialChats, initialFolders } from './mockData';
+import { getCanonicalDirectChatId } from '../lib/chatId';
 
 export const defaultCleanUserFolders: IChatFolder[] = [
   {
@@ -235,17 +236,26 @@ export const useChatStore = create<ChatState>()(
 
       getOrCreateDirectChat: (targetUser) => {
         const state = get();
+        const currentUserId = state.currentUserId || useUserStore.getState().profile.id;
+        const canonicalId = getCanonicalDirectChatId(currentUserId, targetUser.id);
+        const legacyId = `direct-${targetUser.id}`;
+
         const existingChat = state.chats.find(
           (c) =>
-            c.id === `direct-${targetUser.id}` ||
+            c.id === canonicalId ||
+            c.id === legacyId ||
+            c.participantId === targetUser.id ||
             (c.isPersonal && c.title.toLowerCase() === targetUser.name.toLowerCase())
         );
         if (existingChat) {
+          if (!existingChat.participantId) {
+            existingChat.participantId = targetUser.id;
+          }
           return existingChat;
         }
 
         const newDirectChat: IChat = {
-          id: `direct-${targetUser.id}`,
+          id: canonicalId,
           title: targetUser.name,
           avatarUrl: targetUser.avatarUrl || '',
           lastMessage: '',
@@ -258,6 +268,7 @@ export const useChatStore = create<ChatState>()(
           lastMessageSenderMe: true,
           lastMessageRead: true,
           folderIds: ['personal'],
+          participantId: targetUser.id,
         };
 
         const nextChats = [newDirectChat, ...state.chats];
