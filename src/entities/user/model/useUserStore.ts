@@ -2,6 +2,7 @@ import { create } from 'zustand';
 import { persist, createJSONStorage } from 'zustand/middleware';
 import { safeAsyncStorage } from '../../../shared/lib/storage';
 import { cleanPhoneDigits } from '../../../shared/lib/phone';
+import { apiClient } from '../../../shared/api/apiClient';
 import { IUserProfile } from './types';
 
 export const DEMO_ACCOUNTS: IUserProfile[] = [
@@ -110,6 +111,7 @@ export const useUserStore = create<UserState>()(
       },
 
       registerAccount: (newProfile: IUserProfile) => {
+        apiClient.auth(newProfile).catch(() => {});
         set((state) => {
           const cleanPhone = cleanPhoneDigits(newProfile.phone);
           const filtered = state.accounts.filter(
@@ -126,17 +128,21 @@ export const useUserStore = create<UserState>()(
       loginAsDemo: (demoId = 'user-demo-alex') => {
         const demoUser =
           DEMO_ACCOUNTS.find((a) => a.id === demoId) || DEMO_ACCOUNTS[0];
+        apiClient.auth(demoUser).catch(() => {});
         set({
           profile: demoUser,
           isAuthenticated: true,
         });
       },
 
-      login: (newProfile) =>
+      login: (newProfile) => {
+        const profileToSet = newProfile
+          ? { ...emptyProfile, ...newProfile }
+          : emptyProfile;
+        if (profileToSet.id) {
+          apiClient.auth(profileToSet).catch(() => {});
+        }
         set((state) => {
-          const profileToSet = newProfile
-            ? { ...emptyProfile, ...newProfile }
-            : emptyProfile;
           const cleanPhone = cleanPhoneDigits(profileToSet.phone);
           const existingIdx = state.accounts.findIndex(
             (a) => cleanPhoneDigits(a.phone) === cleanPhone
@@ -155,7 +161,8 @@ export const useUserStore = create<UserState>()(
             profile: profileToSet,
             accounts: updatedAccounts,
           };
-        }),
+        });
+      },
 
       logout: () =>
         set({
@@ -169,6 +176,7 @@ export const useUserStore = create<UserState>()(
             ...state.profile,
             ...data,
           };
+          apiClient.auth(nextProfile).catch(() => {});
           const cleanPhone = cleanPhoneDigits(nextProfile.phone);
           const updatedAccounts = state.accounts.map((acc) =>
             cleanPhoneDigits(acc.phone) === cleanPhone || acc.id === nextProfile.id
