@@ -9,7 +9,6 @@ import {
   Alert,
 } from 'react-native';
 import {
-  ArrowLeft,
   Phone,
   Video,
   Bell,
@@ -22,6 +21,7 @@ import { useMessageStore, IMessage } from '../../../entities/message';
 import { IUserProfile } from '../../../entities/user';
 import { Avatar } from '../../../shared/ui/avatar';
 import { IconButton } from '../../../shared/ui/icon-button';
+import { ScreenHeader } from '../../../shared/ui/screen-header';
 import { theme } from '../../../shared/config/theme';
 import {
   MediaTabs,
@@ -265,17 +265,15 @@ export const ChatProfilePage: React.FC<ChatProfilePageProps> = ({
 
   return (
     <View style={styles.container}>
-      <View style={styles.header}>
-        <IconButton size={40} onPress={onBack}>
-          <ArrowLeft size={22} color={theme.colors.text} />
-        </IconButton>
-        <Text style={styles.headerTitle} numberOfLines={1}>
-          {isGroup ? 'Group Info' : 'User Info'}
-        </Text>
-        <IconButton size={40} onPress={() => handleAction('More options')}>
-          <MoreVertical size={20} color={theme.colors.text} />
-        </IconButton>
-      </View>
+      <ScreenHeader
+        title={isGroup ? 'Group Info' : 'User Info'}
+        onBack={onBack}
+        rightElement={
+          <IconButton size={40} onPress={() => handleAction('More options')}>
+            <MoreVertical size={20} color={theme.colors.text} />
+          </IconButton>
+        }
+      />
 
       <ScrollView contentContainerStyle={styles.scrollContent}>
         <View style={styles.profileHero}>
@@ -428,21 +426,6 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: '#F4F4F7',
-  },
-  header: {
-    height: 52,
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    paddingHorizontal: 8,
-    borderBottomWidth: StyleSheet.hairlineWidth,
-    borderBottomColor: theme.colors.divider,
-    backgroundColor: theme.colors.white,
-  },
-  headerTitle: {
-    ...theme.typography.title,
-    fontSize: 18,
-    fontWeight: '700',
   },
   scrollContent: {
     paddingBottom: 40,

@@ -9,7 +9,6 @@ import {
   Alert,
 } from 'react-native';
 import {
-  ArrowLeft,
   Camera,
   Pencil,
   Bookmark,
@@ -21,6 +20,7 @@ import {
 import { useUserStore } from '../../../entities/user';
 import { Avatar } from '../../../shared/ui/avatar';
 import { IconButton } from '../../../shared/ui/icon-button';
+import { ScreenHeader } from '../../../shared/ui/screen-header';
 import { CustomButton } from '../../../shared/ui/custom-button';
 import { ConfirmModal } from '../../../shared/ui/confirm-modal';
 import { pickImageFromGallery } from '../../../shared/lib/mediaPicker';
@@ -116,25 +116,21 @@ export const MyProfilePage: React.FC<MyProfilePageProps> = ({
 
   return (
     <View style={styles.container}>
-      <View style={styles.header}>
-        <IconButton size={40} onPress={onBack}>
-          <ArrowLeft size={22} color={theme.colors.text} />
-        </IconButton>
-
-        <Text style={styles.headerTitle}>
-          {isEditing ? 'Edit Profile' : 'My Profile'}
-        </Text>
-
-        {isEditing ? (
-          <Pressable onPress={handleSave} style={styles.doneButton} hitSlop={8}>
-            <Text style={styles.doneText}>Done</Text>
-          </Pressable>
-        ) : (
-          <IconButton size={40} onPress={handleStartEdit}>
-            <Pencil size={20} color={theme.colors.primary} />
-          </IconButton>
-        )}
-      </View>
+      <ScreenHeader
+        title={isEditing ? 'Edit Profile' : 'My Profile'}
+        onBack={onBack}
+        rightElement={
+          isEditing ? (
+            <Pressable onPress={handleSave} style={styles.doneButton} hitSlop={8}>
+              <Text style={styles.doneText}>Done</Text>
+            </Pressable>
+          ) : (
+            <IconButton size={40} onPress={handleStartEdit}>
+              <Pencil size={20} color={theme.colors.primary} />
+            </IconButton>
+          )
+        }
+      />
 
       <ScrollView contentContainerStyle={styles.scrollContent}>
         <View style={styles.avatarSection}>
@@ -231,7 +227,7 @@ export const MyProfilePage: React.FC<MyProfilePageProps> = ({
                 title="Save Changes"
                 onPress={handleSave}
                 variant="primary"
-                style={{ width: '100%' }}
+                style={styles.fullWidthButton}
               />
             </View>
           </View>
@@ -334,11 +330,11 @@ export const MyProfilePage: React.FC<MyProfilePageProps> = ({
                 title="Edit Profile"
                 onPress={handleStartEdit}
                 variant="secondary"
-                style={{ width: '100%' }}
+                style={styles.fullWidthButton}
               />
 
               <Pressable style={styles.logoutButton} onPress={handleLogout}>
-                <LogOut size={18} color="#EF4444" style={{ marginRight: 8 }} />
+                <LogOut size={18} color="#EF4444" style={styles.logoutIcon} />
                 <Text style={styles.logoutText}>Log Out</Text>
               </Pressable>
             </View>
@@ -369,21 +365,6 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: '#F4F4F7',
-  },
-  header: {
-    height: 52,
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    paddingHorizontal: 12,
-    borderBottomWidth: StyleSheet.hairlineWidth,
-    borderBottomColor: theme.colors.divider,
-    backgroundColor: theme.colors.white,
-  },
-  headerTitle: {
-    ...theme.typography.title,
-    fontSize: 18,
-    fontWeight: '700',
   },
   doneButton: {
     paddingHorizontal: 8,
@@ -576,5 +557,11 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontWeight: '600',
     color: '#EF4444',
+  },
+  logoutIcon: {
+    marginRight: 8,
+  },
+  fullWidthButton: {
+    width: '100%',
   },
 });

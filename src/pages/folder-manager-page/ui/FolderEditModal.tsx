@@ -7,9 +7,10 @@ import {
   Pressable,
   FlatList,
 } from 'react-native';
-import { Check, Folder, Search } from 'lucide-react-native';
+import { Check, Folder } from 'lucide-react-native';
 import { IChat, IChatFolder } from '../../../entities/chat';
 import { Avatar } from '../../../shared/ui/avatar';
+import { SearchBar } from '../../../shared/ui/search-bar';
 import { SlideScreen } from '../../../shared/ui/slide-screen';
 import { theme } from '../../../shared/config/theme';
 
@@ -115,16 +116,12 @@ export const FolderEditModal: React.FC<FolderEditModalProps> = ({
           </Text>
         </View>
 
-        <View style={styles.searchBar}>
-          <Search size={16} color={theme.colors.textMuted} style={styles.searchIcon} />
-          <TextInput
-            value={filterQuery}
-            onChangeText={setFilterQuery}
-            placeholder="Search chats"
-            placeholderTextColor={theme.colors.textMuted}
-            style={styles.searchInput}
-          />
-        </View>
+        <SearchBar
+          value={filterQuery}
+          onChangeText={setFilterQuery}
+          placeholder="Search chats"
+          containerStyle={styles.searchBarWrapper}
+        />
 
         <FlatList
           data={filteredChats}
@@ -250,26 +247,9 @@ const styles = StyleSheet.create({
     color: theme.colors.primary,
     fontWeight: '600',
   },
-  searchBar: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: theme.colors.white,
+  searchBarWrapper: {
     marginHorizontal: 16,
     marginBottom: 10,
-    paddingHorizontal: 10,
-    borderRadius: 10,
-    height: 38,
-    borderWidth: 1,
-    borderColor: theme.colors.divider,
-  },
-  searchIcon: {
-    marginRight: 8,
-  },
-  searchInput: {
-    flex: 1,
-    fontSize: 15,
-    color: theme.colors.text,
-    paddingVertical: 4,
   },
   listContent: {
     backgroundColor: theme.colors.white,

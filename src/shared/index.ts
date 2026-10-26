@@ -4,4 +4,6 @@ export * from './ui/custom-button';
 export * from './ui/icon-button';
 export * from './ui/avatar';
 export * from './ui/swipeable-row';
+export * from './ui/screen-header';
+export * from './ui/search-bar';
 export * from './api/apiClient';
